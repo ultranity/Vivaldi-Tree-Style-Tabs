@@ -82,6 +82,7 @@ async function main() {
   const dragStore = createDragStore()
   const renderer = createSidebarRenderer({
     root: mount.root,
+    dragShield: mount.dragShield,
     onActivateTab: id => {
       selectionStore.clear()
       store.activateTab(id)

@@ -1,7 +1,6 @@
 const VIVALDI_TILING_MODULE_ID = 69787
 const VIVALDI_PAGE_STORE_MODULE_ID = 96951
 const VIVALDI_COLLECTION_MODULE_ID = 35369
-const VIVALDI_WORKSPACE_MANAGER_MODULE_ID = 29104
 const VIVALDI_PAGE_ACTIONS_MODULE_ID = 59322
 
 function createVivaldiBridge(options) {
@@ -15,6 +14,10 @@ function createVivaldiBridge(options) {
 
   let mainViewWebpackRequire = null
   let workspaceManager = null
+  let pageStore = null
+  let tilingModule = null
+  let pageActions = null
+  let collectionModule = null
   const workspaceRepairTasksById = new Map()
 
   function getVivaldiMainView() {
@@ -58,19 +61,58 @@ function createVivaldiBridge(options) {
     try {
       return require(moduleId)
     } catch (error) {
-      console.warn('[svb] cannot resolve Vivaldi module', moduleId, error)
       return null
     }
   }
 
+  function findModuleByExports(predicate) {
+    const require = getMainViewWebpackRequire()
+    if (!require || !require.m) return null
+
+    for (const moduleId of Object.keys(require.m)) {
+      try {
+        const mod = require(moduleId)
+        if (!mod) continue
+        
+        // Check main export and Z/ZP wrappers
+        if (predicate(mod)) return mod
+        if (mod.Z && predicate(mod.Z)) return mod.Z
+        if (mod.ZP && predicate(mod.ZP)) return mod.ZP
+      } catch (e) {
+        continue
+      }
+    }
+    return null
+  }
+
   function getWorkspaceManager() {
     if (workspaceManager) return workspaceManager
-
-    const moduleValue = getVivaldiWebpackModule(VIVALDI_WORKSPACE_MANAGER_MODULE_ID)
-    const candidate = moduleValue && moduleValue.Z ? moduleValue.Z : moduleValue
-    workspaceManager = candidate && typeof candidate.setName === 'function' ? candidate : null
-
+    workspaceManager = findModuleByExports(m => typeof m.setName === 'function' && (typeof m.setIcon === 'function' || typeof m.setWorkspaceIcon === 'function'))
     return workspaceManager
+  }
+
+  function getPageStore() {
+    if (pageStore) return pageStore
+    pageStore = findModuleByExports(m => typeof m.getPageById === 'function' && typeof m.getPages === 'function')
+    return pageStore
+  }
+
+  function getTilingModule() {
+    if (tilingModule) return tilingModule
+    tilingModule = findModuleByExports(m => typeof m.Yb === 'function' && m.Yb.length >= 2)
+    return tilingModule
+  }
+
+  function getPageActions() {
+    if (pageActions) return pageActions
+    pageActions = findModuleByExports(m => typeof m.detachPage === 'function' && typeof m.movePage === 'function')
+    return pageActions
+  }
+
+  function getCollectionModule() {
+    if (collectionModule) return collectionModule
+    collectionModule = findModuleByExports(m => typeof m.aV === 'function' && typeof m.V_ === 'function')
+    return collectionModule
   }
 
   function repairWorkspaceRuntime(workspace) {
@@ -79,8 +121,9 @@ function createVivaldiBridge(options) {
 
     try {
       manager.setName(workspace.id, workspace.name)
-      if (typeof manager.setIcon === 'function' && workspace.icon) {
-        manager.setIcon(workspace.id, workspace.icon)
+      const setIcon = manager.setIcon || manager.setWorkspaceIcon
+      if (typeof setIcon === 'function' && workspace.icon) {
+        setIcon(workspace.id, workspace.icon)
       }
       return true
     } catch (error) {
@@ -148,6 +191,14 @@ function createVivaldiBridge(options) {
     }
   }
 
+  function getWorkspaceStore() {
+    return findModuleByExports(m => 
+      typeof m.getWorkspaces === 'function' && 
+      typeof m.getActiveWorkspaceId === 'function' &&
+      typeof m.addListener === 'function'
+    )
+  }
+
   function normalizeWorkspace(workspace) {
     if (!workspace || typeof workspace !== 'object') return null
     const id = Number(workspace.id)
@@ -161,15 +212,51 @@ function createVivaldiBridge(options) {
 
   return {
     async getWorkspaces() {
+      // 1. Try internal WorkspaceStore (Most reliable in Vivaldi 8)
+      const store = getWorkspaceStore()
+      if (store) {
+        try {
+          const workspaces = store.getWorkspaces()
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {
+          console.warn('[svb] WorkspaceStore fetch failed:', e)
+        }
+      }
+
+      // 2. Fallback to native API
+      const workspacesApi = typeof vivaldi !== 'undefined' && vivaldi.workspaces
+      if (workspacesApi && typeof workspacesApi.getAll === 'function') {
+        try {
+          const workspaces = await promisifyChromeApi(workspacesApi.getAll)
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback to Prefs
       const prefsApi = getPrefsApi()
       if (!prefsApi || typeof prefsApi.get !== 'function') return []
-      const workspaces = await promisifyChromeApi(prefsApi.get, workspacesPrefPath)
-      return (Array.isArray(workspaces) ? workspaces : [])
-        .map(normalizeWorkspace)
-        .filter(Boolean)
+      
+      try {
+        const workspaces = await promisifyChromeApi(prefsApi.get, 'vivaldi.workspaces.list')
+        if (Array.isArray(workspaces)) {
+          return workspaces.map(normalizeWorkspace).filter(Boolean)
+        }
+      } catch (e) {}
+
+      return []
     },
 
     async createWorkspace(name = 'New Workspace') {
+      const store = getWorkspaceStore()
+      if (store && typeof store.addWorkspace === 'function') {
+        // In Vivaldi 8, we might need to use the store to create
+        // But for now, let's keep the pref-based creation if it works
+      }
+
       const prefsApi = getPrefsApi()
       if (!prefsApi || typeof prefsApi.get !== 'function') return null
 
@@ -208,14 +295,14 @@ function createVivaldiBridge(options) {
       if (ids.length < 2) return null
       if (!['row', 'column', 'grid'].includes(layout)) return null
 
-      const tilingModule = getVivaldiWebpackModule(VIVALDI_TILING_MODULE_ID)
-      const pageStoreModule = getVivaldiWebpackModule(VIVALDI_PAGE_STORE_MODULE_ID)
-      const collectionModule = getVivaldiWebpackModule(VIVALDI_COLLECTION_MODULE_ID)
-      const tilePages = tilingModule && typeof tilingModule.Yb === 'function' ? tilingModule.Yb : null
-      const pageStore = pageStoreModule && pageStoreModule.ZP ? pageStoreModule.ZP : null
-      const createCollection = collectionModule && typeof collectionModule.aV === 'function' ? collectionModule.aV : null
+      const tiling = getTilingModule()
+      const store = getPageStore()
+      const collection = getCollectionModule()
+      const tilePages = tiling && typeof tiling.Yb === 'function' ? tiling.Yb : null
+      const pageStore = store && typeof store.getPageById === 'function' ? store : null
+      const createCollection = collection && typeof collection.aV === 'function' ? collection.aV : null
 
-      if (!tilePages || !pageStore || !createCollection || typeof pageStore.getPageById !== 'function') {
+      if (!tilePages || !pageStore || !createCollection) {
         return null
       }
 
@@ -233,19 +320,18 @@ function createVivaldiBridge(options) {
         : []
       if (ids.length === 0) return false
 
-      const pageActionsModule = getVivaldiWebpackModule(VIVALDI_PAGE_ACTIONS_MODULE_ID)
-      const pageStoreModule = getVivaldiWebpackModule(VIVALDI_PAGE_STORE_MODULE_ID)
-      const collectionModule = getVivaldiWebpackModule(VIVALDI_COLLECTION_MODULE_ID)
-      const pageActions = pageActionsModule && pageActionsModule.ZP ? pageActionsModule.ZP : null
-      const pageStore = pageStoreModule && pageStoreModule.ZP ? pageStoreModule.ZP : null
-      const createCollection = collectionModule && typeof collectionModule.aV === 'function' ? collectionModule.aV : null
+      const actions = getPageActions()
+      const store = getPageStore()
+      const collection = getCollectionModule()
+      
+      const detachPage = actions && typeof actions.detachPage === 'function' ? actions.detachPage : null
+      const getPageById = store && typeof store.getPageById === 'function' ? store.getPageById.bind(store) : null
+      const createCollection = collection && typeof collection.aV === 'function' ? collection.aV : null
 
-      if (!pageActions || typeof pageActions.detachPage !== 'function') return false
-      if (!pageStore || typeof pageStore.getPageById !== 'function') return false
-      if (!createCollection) return false
+      if (!detachPage || !getPageById || !createCollection) return false
 
       const pages = ids
-        .map(tabId => pageStore.getPageById(tabId))
+        .map(tabId => getPageById(tabId))
         .filter(Boolean)
 
       if (pages.length === 0) return false
@@ -254,8 +340,32 @@ function createVivaldiBridge(options) {
         ? pages[0]
         : createCollection(pages)
 
-      await pageActions.detachPage(nativeTarget)
+      await detachPage(nativeTarget)
       return true
+    },
+
+    onWorkspacesChanged(listener) {
+      // 1. Try WorkspaceStore listener (Immediate updates)
+      const store = getWorkspaceStore()
+      if (store && typeof store.addListener === 'function') {
+        const wrapped = () => {
+          listener(store.getWorkspaces())
+        }
+        store.addListener(wrapped)
+        return () => store.removeListener(wrapped)
+      }
+
+      // 2. Fallback to Prefs listener
+      const prefsApi = getPrefsApi()
+      if (!prefsApi || typeof prefsApi.onChanged === 'undefined') return () => {}
+
+      const wrapped = (path, value) => {
+        if (path === workspacesPrefPath || path === 'vivaldi.workspaces.list' || path === 'vivaldi.workspaces') {
+          listener(value)
+        }
+      }
+      prefsApi.onChanged.addListener(wrapped)
+      return () => prefsApi.onChanged.removeListener(wrapped)
     },
   }
 }

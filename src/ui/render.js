@@ -1,5 +1,3 @@
-const { WORKSPACES_BY_ID } = require('../generated/workspaces-data.js')
-
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -135,9 +133,7 @@ function renderContextMenu(tab, state, contextMenu) {
   const isPinned = !!tab.pinned
   const hasChildren = Array.isArray(state.treeTabs)
     && state.treeTabs.some(item => item && item.id === tab.id && item.hasChildren)
-  const workspaces = (Array.isArray(state.workspaces) && state.workspaces.length
-    ? state.workspaces
-    : Object.values(WORKSPACES_BY_ID || {}))
+  const workspaces = (Array.isArray(state.workspaces) ? state.workspaces : [])
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
 
   const workspaceItems = workspaces.map(workspace => renderContextMenuItem({
@@ -513,7 +509,7 @@ function createNodeFromHtml(html) {
 }
 
 function createSidebarRenderer(options) {
-  const { root, onActivateTab, onCloseTab, onCreateTab, onCreateChildTab, onRenameTab, onTogglePinned, onToggleMute, onToggleCollapse, onCollapseAll, onSelectTab, onOpenContextMenu, onContextMenuAction, onStartDrag, onUpdateDropTarget, onCommitDrop, onCommitExternalDrop, onClearDrag } = options
+  const { root, dragShield, onActivateTab, onCloseTab, onCreateTab, onCreateChildTab, onRenameTab, onTogglePinned, onToggleMute, onToggleCollapse, onCollapseAll, onSelectTab, onOpenContextMenu, onContextMenuAction, onStartDrag, onUpdateDropTarget, onCommitDrop, onCommitExternalDrop, onClearDrag } = options
   let pendingScrollToActive = false
   let pendingScrollSourceTabId = null
   let currentVisibleIds = []
@@ -745,16 +741,35 @@ function createSidebarRenderer(options) {
   }
 
   function updateContextMenu(currentShell, state) {
+    if (dragShield) {
+      dragShield.classList.toggle('is-menu-backdrop', !!contextMenu)
+    }
+
     if (!contextMenu) {
       if (currentShell.menuHost.childElementCount > 0) {
         currentShell.menuHost.innerHTML = ''
       }
       return
     }
-    const allTabsById = new Map(state.pinnedTabs.concat(state.tabs).map(tab => [tab.id, tab]))
-    const contextTab = allTabsById.get(contextMenu.tabId) || null
-    currentShell.menuHost.innerHTML = renderContextMenu(contextTab, state, contextMenu)
-    positionContextMenu()
+
+    // Render if empty OR if requested for a different tab
+    const existingMenu = currentShell.menuHost.querySelector('.svb-menu')
+    const renderedTabId = existingMenu ? Number(existingMenu.getAttribute('data-tab-id')) : null
+
+    if (!existingMenu || renderedTabId !== contextMenu.tabId) {
+      const allTabsById = new Map(state.pinnedTabs.concat(state.tabs).map(tab => [tab.id, tab]))
+      const contextTab = allTabsById.get(contextMenu.tabId) || null
+      if (!contextTab) return
+
+      currentShell.menuHost.innerHTML = renderContextMenu(contextTab, state, contextMenu)
+      positionContextMenu()
+
+      const menuNode = currentShell.menuHost.querySelector('.svb-menu')
+      if (menuNode) {
+        void menuNode.offsetWidth
+        menuNode.classList.add('is-visible')
+      }
+    }
   }
 
   function updateVisualOnlyNodes(state, treeTabs, visualState, currentShell, contentChangedIds = null) {
@@ -1258,6 +1273,26 @@ function createSidebarRenderer(options) {
     submenu.style.visibility = ''
   }
 
+  if (dragShield) {
+    dragShield.addEventListener('click', event => {
+      if (contextMenu) {
+        event.preventDefault()
+        event.stopPropagation()
+        contextMenu = null
+        renderCurrent()
+      }
+    }, eventOptions)
+
+    dragShield.addEventListener('contextmenu', event => {
+      if (contextMenu) {
+        event.preventDefault()
+        event.stopPropagation()
+        contextMenu = null
+        renderCurrent()
+      }
+    }, eventOptions)
+  }
+
   root.addEventListener('click', event => {
     if (event.target.closest('[data-role="rename-input"]')) return
 
@@ -1484,10 +1519,13 @@ function createSidebarRenderer(options) {
     event.preventDefault()
     event.stopPropagation()
     if (onOpenContextMenu) onOpenContextMenu(tabId)
+
+    const rootRect = root.getBoundingClientRect()
     contextMenu = {
       tabId,
-      x: event.clientX,
-      y: event.clientY,
+      x: event.clientX - rootRect.left,
+      y: event.clientY - rootRect.top,
+      viewportY: event.clientY,
     }
     renderCurrent()
   }, eventOptions)
@@ -1522,6 +1560,13 @@ function createSidebarRenderer(options) {
     contextMenu = null
     renderCurrent()
   }, { capture: true, signal: eventController.signal })
+
+  window.addEventListener('blur', () => {
+    if (contextMenu) {
+      contextMenu = null
+      renderCurrent()
+    }
+  }, { signal: eventController.signal })
 
   root.addEventListener('keydown', event => {
     const input = event.target.closest('[data-role="rename-input"]')
@@ -1590,16 +1635,26 @@ function createSidebarRenderer(options) {
   function positionContextMenu() {
     const currentShell = ensureShell()
     const menu = currentShell.menuHost.querySelector('.svb-menu')
-    if (!menu) return
+    if (!menu || !contextMenu) return
 
-    const margin = 6
+    const margin = 10
     const rect = menu.getBoundingClientRect()
-    const currentLeft = Number.parseFloat(menu.style.left) || 0
-    const currentTop = Number.parseFloat(menu.style.top) || 0
-    const desiredViewportLeft = Math.max(margin, Math.min(rect.left, window.innerWidth - rect.width - margin))
-    const desiredViewportTop = Math.max(margin, Math.min(rect.top, window.innerHeight - rect.height - margin))
-    menu.style.left = `${currentLeft + desiredViewportLeft - rect.left}px`
-    menu.style.top = `${currentTop + desiredViewportTop - rect.top}px`
+    
+    // Default position: top edge at cursor
+    let top = contextMenu.y
+    
+    // If menu goes below viewport, flip it up or shift it
+    if (contextMenu.viewportY + rect.height > window.innerHeight - margin) {
+      top = contextMenu.y - rect.height
+      // If it now goes above the top, just align with bottom of viewport
+      if (contextMenu.viewportY - rect.height < margin) {
+        const rootRect = root.getBoundingClientRect()
+        top = window.innerHeight - rect.height - margin - rootRect.top
+      }
+    }
+
+    menu.style.left = `${contextMenu.x}px`
+    menu.style.top = `${top}px`
   }
 
   return {

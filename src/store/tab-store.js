@@ -865,6 +865,7 @@ function createTabStore(api) {
       api.onAttached(refreshPreservingContext),
       api.onDetached(refreshPreservingContext),
       api.onActivated(refreshFromActiveTab),
+      api.onWorkspacesChanged ? api.onWorkspacesChanged(refreshPreservingContext) : () => {},
       api.onBookmarksChanged ? api.onBookmarksChanged(refreshBookmarks) : () => {},
     ]
   }

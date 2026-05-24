@@ -99,7 +99,7 @@ const STYLE_TEXT = `
 }
 
 #svb-root.svb-shell.is-menu-open {
-  z-index: 999999;
+  z-index: 1000001 !important;
 }
 
 #browser > #main > .inner.svb-layout-host.svb-is-fullscreen #svb-root.svb-shell,
@@ -153,6 +153,12 @@ body.svb-is-resizing {
   display: block;
 }
 
+#svb-root-drag-shield.svb-drag-shield.is-menu-backdrop {
+  display: block;
+  cursor: default;
+  left: var(--svb-sidebar-width, 300px);
+}
+
 #svb-root .svb-frame {
   display: flex;
   flex-direction: column;
@@ -160,10 +166,26 @@ body.svb-is-resizing {
   height: 100%;
   overflow: hidden;
   border: 1px solid var(--svb-border);
-  border-radius: 0;
+  border-radius: var(--svb-radius);
   color: var(--svb-text);
   background: var(--svb-bg);
   box-shadow: var(--svb-shadow);
+}
+
+#svb-root.svb-shell.is-unified {
+  padding: 0 0 4px 4px;
+}
+
+#svb-root.svb-shell.is-unified .svb-frame {
+  border-radius: var(--svb-radius);
+  border: 1px solid var(--svb-border);
+}
+
+#svb-root.svb-shell:not(.is-unified) .svb-frame {
+  border-top: 0;
+  border-bottom: 0;
+  border-left: 0;
+  border-radius: 0;
 }
 
 #svb-root .svb-resize-handle {
@@ -903,7 +925,7 @@ body.svb-is-resizing {
 }
 
 #svb-root .svb-menu {
-  position: fixed;
+  position: absolute;
   z-index: 2147483647;
   min-width: 238px;
   max-width: 320px;
@@ -914,6 +936,16 @@ body.svb-is-resizing {
   background: var(--colorBg, #202327) !important;
   backdrop-filter: none !important;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.24);
+  opacity: 0;
+  transform: scale(0.98);
+  transition: opacity 0.08s ease-out, transform 0.08s ease-out;
+  pointer-events: none;
+}
+
+#svb-root .svb-menu.is-visible {
+  opacity: 1 !important;
+  transform: scale(1) !important;
+  pointer-events: auto !important;
 }
 
 #svb-root .svb-menu__item {
@@ -936,7 +968,7 @@ body.svb-is-resizing {
 
 #svb-root .svb-menu__item:hover,
 #svb-root .svb-menu__item.has-submenu:hover {
-  background: var(--svb-panel-hover);
+  background: color-mix(in srgb, var(--svb-text) 12%, transparent);
 }
 
 #svb-root .svb-menu__item.is-danger {
@@ -1045,19 +1077,21 @@ body.svb-is-resizing {
   min-width: 230px;
   padding: 5px;
   border: 1px solid var(--svb-border, rgba(255, 255, 255, 0.12));
-  border-radius: 8px;
   border-radius: calc(var(--svb-radius, 5px) + 3px);
   color: var(--svb-text, #d8d8d8);
-  background: #202327;
-  background: color-mix(in srgb, var(--svb-bg, #232629) 94%, black);
+  background: var(--colorBg, #202327) !important;
+  backdrop-filter: none !important;
   box-shadow: 0 12px 34px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.24);
   opacity: 0;
+  transform: translateX(-4px);
+  transition: opacity 0.1s ease-out, transform 0.1s ease-out;
   overscroll-behavior: contain;
 }
 
 #svb-root .svb-menu__item.has-submenu:hover > .svb-menu__submenu {
   display: block;
   opacity: 1;
+  transform: translateX(0);
 }
 
 #svb-root .svb-menu__item.has-submenu.is-submenu-up > .svb-menu__submenu {
@@ -3847,6 +3881,7 @@ function createTabStore(api) {
       api.onAttached(refreshPreservingContext),
       api.onDetached(refreshPreservingContext),
       api.onActivated(refreshFromActiveTab),
+      api.onWorkspacesChanged ? api.onWorkspacesChanged(refreshPreservingContext) : () => {},
       api.onBookmarksChanged ? api.onBookmarksChanged(refreshBookmarks) : () => {},
     ]
   }
@@ -4644,7 +4679,6 @@ module.exports = { createDragStore }
 const VIVALDI_TILING_MODULE_ID = 69787
 const VIVALDI_PAGE_STORE_MODULE_ID = 96951
 const VIVALDI_COLLECTION_MODULE_ID = 35369
-const VIVALDI_WORKSPACE_MANAGER_MODULE_ID = 29104
 const VIVALDI_PAGE_ACTIONS_MODULE_ID = 59322
 
 function createVivaldiBridge(options) {
@@ -4658,6 +4692,10 @@ function createVivaldiBridge(options) {
 
   let mainViewWebpackRequire = null
   let workspaceManager = null
+  let pageStore = null
+  let tilingModule = null
+  let pageActions = null
+  let collectionModule = null
   const workspaceRepairTasksById = new Map()
 
   function getVivaldiMainView() {
@@ -4701,19 +4739,58 @@ function createVivaldiBridge(options) {
     try {
       return require(moduleId)
     } catch (error) {
-      console.warn('[svb] cannot resolve Vivaldi module', moduleId, error)
       return null
     }
   }
 
+  function findModuleByExports(predicate) {
+    const require = getMainViewWebpackRequire()
+    if (!require || !require.m) return null
+
+    for (const moduleId of Object.keys(require.m)) {
+      try {
+        const mod = require(moduleId)
+        if (!mod) continue
+        
+        // Check main export and Z/ZP wrappers
+        if (predicate(mod)) return mod
+        if (mod.Z && predicate(mod.Z)) return mod.Z
+        if (mod.ZP && predicate(mod.ZP)) return mod.ZP
+      } catch (e) {
+        continue
+      }
+    }
+    return null
+  }
+
   function getWorkspaceManager() {
     if (workspaceManager) return workspaceManager
-
-    const moduleValue = getVivaldiWebpackModule(VIVALDI_WORKSPACE_MANAGER_MODULE_ID)
-    const candidate = moduleValue && moduleValue.Z ? moduleValue.Z : moduleValue
-    workspaceManager = candidate && typeof candidate.setName === 'function' ? candidate : null
-
+    workspaceManager = findModuleByExports(m => typeof m.setName === 'function' && (typeof m.setIcon === 'function' || typeof m.setWorkspaceIcon === 'function'))
     return workspaceManager
+  }
+
+  function getPageStore() {
+    if (pageStore) return pageStore
+    pageStore = findModuleByExports(m => typeof m.getPageById === 'function' && typeof m.getPages === 'function')
+    return pageStore
+  }
+
+  function getTilingModule() {
+    if (tilingModule) return tilingModule
+    tilingModule = findModuleByExports(m => typeof m.Yb === 'function' && m.Yb.length >= 2)
+    return tilingModule
+  }
+
+  function getPageActions() {
+    if (pageActions) return pageActions
+    pageActions = findModuleByExports(m => typeof m.detachPage === 'function' && typeof m.movePage === 'function')
+    return pageActions
+  }
+
+  function getCollectionModule() {
+    if (collectionModule) return collectionModule
+    collectionModule = findModuleByExports(m => typeof m.aV === 'function' && typeof m.V_ === 'function')
+    return collectionModule
   }
 
   function repairWorkspaceRuntime(workspace) {
@@ -4722,8 +4799,9 @@ function createVivaldiBridge(options) {
 
     try {
       manager.setName(workspace.id, workspace.name)
-      if (typeof manager.setIcon === 'function' && workspace.icon) {
-        manager.setIcon(workspace.id, workspace.icon)
+      const setIcon = manager.setIcon || manager.setWorkspaceIcon
+      if (typeof setIcon === 'function' && workspace.icon) {
+        setIcon(workspace.id, workspace.icon)
       }
       return true
     } catch (error) {
@@ -4791,6 +4869,14 @@ function createVivaldiBridge(options) {
     }
   }
 
+  function getWorkspaceStore() {
+    return findModuleByExports(m => 
+      typeof m.getWorkspaces === 'function' && 
+      typeof m.getActiveWorkspaceId === 'function' &&
+      typeof m.addListener === 'function'
+    )
+  }
+
   function normalizeWorkspace(workspace) {
     if (!workspace || typeof workspace !== 'object') return null
     const id = Number(workspace.id)
@@ -4804,15 +4890,51 @@ function createVivaldiBridge(options) {
 
   return {
     async getWorkspaces() {
+      // 1. Try internal WorkspaceStore (Most reliable in Vivaldi 8)
+      const store = getWorkspaceStore()
+      if (store) {
+        try {
+          const workspaces = store.getWorkspaces()
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {
+          console.warn('[svb] WorkspaceStore fetch failed:', e)
+        }
+      }
+
+      // 2. Fallback to native API
+      const workspacesApi = typeof vivaldi !== 'undefined' && vivaldi.workspaces
+      if (workspacesApi && typeof workspacesApi.getAll === 'function') {
+        try {
+          const workspaces = await promisifyChromeApi(workspacesApi.getAll)
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {}
+      }
+
+      // 3. Fallback to Prefs
       const prefsApi = getPrefsApi()
       if (!prefsApi || typeof prefsApi.get !== 'function') return []
-      const workspaces = await promisifyChromeApi(prefsApi.get, workspacesPrefPath)
-      return (Array.isArray(workspaces) ? workspaces : [])
-        .map(normalizeWorkspace)
-        .filter(Boolean)
+      
+      try {
+        const workspaces = await promisifyChromeApi(prefsApi.get, 'vivaldi.workspaces.list')
+        if (Array.isArray(workspaces)) {
+          return workspaces.map(normalizeWorkspace).filter(Boolean)
+        }
+      } catch (e) {}
+
+      return []
     },
 
     async createWorkspace(name = 'New Workspace') {
+      const store = getWorkspaceStore()
+      if (store && typeof store.addWorkspace === 'function') {
+        // In Vivaldi 8, we might need to use the store to create
+        // But for now, let's keep the pref-based creation if it works
+      }
+
       const prefsApi = getPrefsApi()
       if (!prefsApi || typeof prefsApi.get !== 'function') return null
 
@@ -4851,14 +4973,14 @@ function createVivaldiBridge(options) {
       if (ids.length < 2) return null
       if (!['row', 'column', 'grid'].includes(layout)) return null
 
-      const tilingModule = getVivaldiWebpackModule(VIVALDI_TILING_MODULE_ID)
-      const pageStoreModule = getVivaldiWebpackModule(VIVALDI_PAGE_STORE_MODULE_ID)
-      const collectionModule = getVivaldiWebpackModule(VIVALDI_COLLECTION_MODULE_ID)
-      const tilePages = tilingModule && typeof tilingModule.Yb === 'function' ? tilingModule.Yb : null
-      const pageStore = pageStoreModule && pageStoreModule.ZP ? pageStoreModule.ZP : null
-      const createCollection = collectionModule && typeof collectionModule.aV === 'function' ? collectionModule.aV : null
+      const tiling = getTilingModule()
+      const store = getPageStore()
+      const collection = getCollectionModule()
+      const tilePages = tiling && typeof tiling.Yb === 'function' ? tiling.Yb : null
+      const pageStore = store && typeof store.getPageById === 'function' ? store : null
+      const createCollection = collection && typeof collection.aV === 'function' ? collection.aV : null
 
-      if (!tilePages || !pageStore || !createCollection || typeof pageStore.getPageById !== 'function') {
+      if (!tilePages || !pageStore || !createCollection) {
         return null
       }
 
@@ -4876,19 +4998,18 @@ function createVivaldiBridge(options) {
         : []
       if (ids.length === 0) return false
 
-      const pageActionsModule = getVivaldiWebpackModule(VIVALDI_PAGE_ACTIONS_MODULE_ID)
-      const pageStoreModule = getVivaldiWebpackModule(VIVALDI_PAGE_STORE_MODULE_ID)
-      const collectionModule = getVivaldiWebpackModule(VIVALDI_COLLECTION_MODULE_ID)
-      const pageActions = pageActionsModule && pageActionsModule.ZP ? pageActionsModule.ZP : null
-      const pageStore = pageStoreModule && pageStoreModule.ZP ? pageStoreModule.ZP : null
-      const createCollection = collectionModule && typeof collectionModule.aV === 'function' ? collectionModule.aV : null
+      const actions = getPageActions()
+      const store = getPageStore()
+      const collection = getCollectionModule()
+      
+      const detachPage = actions && typeof actions.detachPage === 'function' ? actions.detachPage : null
+      const getPageById = store && typeof store.getPageById === 'function' ? store.getPageById.bind(store) : null
+      const createCollection = collection && typeof collection.aV === 'function' ? collection.aV : null
 
-      if (!pageActions || typeof pageActions.detachPage !== 'function') return false
-      if (!pageStore || typeof pageStore.getPageById !== 'function') return false
-      if (!createCollection) return false
+      if (!detachPage || !getPageById || !createCollection) return false
 
       const pages = ids
-        .map(tabId => pageStore.getPageById(tabId))
+        .map(tabId => getPageById(tabId))
         .filter(Boolean)
 
       if (pages.length === 0) return false
@@ -4897,8 +5018,32 @@ function createVivaldiBridge(options) {
         ? pages[0]
         : createCollection(pages)
 
-      await pageActions.detachPage(nativeTarget)
+      await detachPage(nativeTarget)
       return true
+    },
+
+    onWorkspacesChanged(listener) {
+      // 1. Try WorkspaceStore listener (Immediate updates)
+      const store = getWorkspaceStore()
+      if (store && typeof store.addListener === 'function') {
+        const wrapped = () => {
+          listener(store.getWorkspaces())
+        }
+        store.addListener(wrapped)
+        return () => store.removeListener(wrapped)
+      }
+
+      // 2. Fallback to Prefs listener
+      const prefsApi = getPrefsApi()
+      if (!prefsApi || typeof prefsApi.onChanged === 'undefined') return () => {}
+
+      const wrapped = (path, value) => {
+        if (path === workspacesPrefPath || path === 'vivaldi.workspaces.list' || path === 'vivaldi.workspaces') {
+          listener(value)
+        }
+      }
+      prefsApi.onChanged.addListener(wrapped)
+      return () => prefsApi.onChanged.removeListener(wrapped)
     },
   }
 }
@@ -5178,6 +5323,10 @@ function createTabsApi() {
 
     async createWorkspace(name = 'New Workspace') {
       return vivaldiBridge.createWorkspace(name)
+    },
+
+    onWorkspacesChanged(listener) {
+      return vivaldiBridge.onWorkspacesChanged(listener)
     },
 
     repairWorkspace(workspace) {
@@ -5930,24 +6079,7 @@ function createLayoutAdapter(options) {
 module.exports = { createLayoutAdapter }
 
     },
-    "generated/workspaces-data.js": function(require, module, exports) {
-module.exports = {
-  "WORKSPACES_BY_ID": {
-    "1776500650297": {
-      "id": 1776500650297,
-      "name": "Home"
-    },
-    "1776503397106": {
-      "id": 1776503397106,
-      "name": "Work"
-    }
-  }
-}
-
-    },
     "ui/render.js": function(require, module, exports) {
-const { WORKSPACES_BY_ID } = require('../generated/workspaces-data.js')
-
 function escapeHtml(value) {
   return String(value)
     .replace(/&/g, '&amp;')
@@ -6083,9 +6215,7 @@ function renderContextMenu(tab, state, contextMenu) {
   const isPinned = !!tab.pinned
   const hasChildren = Array.isArray(state.treeTabs)
     && state.treeTabs.some(item => item && item.id === tab.id && item.hasChildren)
-  const workspaces = (Array.isArray(state.workspaces) && state.workspaces.length
-    ? state.workspaces
-    : Object.values(WORKSPACES_BY_ID || {}))
+  const workspaces = (Array.isArray(state.workspaces) ? state.workspaces : [])
     .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
 
   const workspaceItems = workspaces.map(workspace => renderContextMenuItem({
@@ -6461,7 +6591,7 @@ function createNodeFromHtml(html) {
 }
 
 function createSidebarRenderer(options) {
-  const { root, onActivateTab, onCloseTab, onCreateTab, onCreateChildTab, onRenameTab, onTogglePinned, onToggleMute, onToggleCollapse, onCollapseAll, onSelectTab, onOpenContextMenu, onContextMenuAction, onStartDrag, onUpdateDropTarget, onCommitDrop, onCommitExternalDrop, onClearDrag } = options
+  const { root, dragShield, onActivateTab, onCloseTab, onCreateTab, onCreateChildTab, onRenameTab, onTogglePinned, onToggleMute, onToggleCollapse, onCollapseAll, onSelectTab, onOpenContextMenu, onContextMenuAction, onStartDrag, onUpdateDropTarget, onCommitDrop, onCommitExternalDrop, onClearDrag } = options
   let pendingScrollToActive = false
   let pendingScrollSourceTabId = null
   let currentVisibleIds = []
@@ -6693,16 +6823,35 @@ function createSidebarRenderer(options) {
   }
 
   function updateContextMenu(currentShell, state) {
+    if (dragShield) {
+      dragShield.classList.toggle('is-menu-backdrop', !!contextMenu)
+    }
+
     if (!contextMenu) {
       if (currentShell.menuHost.childElementCount > 0) {
         currentShell.menuHost.innerHTML = ''
       }
       return
     }
-    const allTabsById = new Map(state.pinnedTabs.concat(state.tabs).map(tab => [tab.id, tab]))
-    const contextTab = allTabsById.get(contextMenu.tabId) || null
-    currentShell.menuHost.innerHTML = renderContextMenu(contextTab, state, contextMenu)
-    positionContextMenu()
+
+    // Render if empty OR if requested for a different tab
+    const existingMenu = currentShell.menuHost.querySelector('.svb-menu')
+    const renderedTabId = existingMenu ? Number(existingMenu.getAttribute('data-tab-id')) : null
+
+    if (!existingMenu || renderedTabId !== contextMenu.tabId) {
+      const allTabsById = new Map(state.pinnedTabs.concat(state.tabs).map(tab => [tab.id, tab]))
+      const contextTab = allTabsById.get(contextMenu.tabId) || null
+      if (!contextTab) return
+
+      currentShell.menuHost.innerHTML = renderContextMenu(contextTab, state, contextMenu)
+      positionContextMenu()
+
+      const menuNode = currentShell.menuHost.querySelector('.svb-menu')
+      if (menuNode) {
+        void menuNode.offsetWidth
+        menuNode.classList.add('is-visible')
+      }
+    }
   }
 
   function updateVisualOnlyNodes(state, treeTabs, visualState, currentShell, contentChangedIds = null) {
@@ -7206,6 +7355,26 @@ function createSidebarRenderer(options) {
     submenu.style.visibility = ''
   }
 
+  if (dragShield) {
+    dragShield.addEventListener('click', event => {
+      if (contextMenu) {
+        event.preventDefault()
+        event.stopPropagation()
+        contextMenu = null
+        renderCurrent()
+      }
+    }, eventOptions)
+
+    dragShield.addEventListener('contextmenu', event => {
+      if (contextMenu) {
+        event.preventDefault()
+        event.stopPropagation()
+        contextMenu = null
+        renderCurrent()
+      }
+    }, eventOptions)
+  }
+
   root.addEventListener('click', event => {
     if (event.target.closest('[data-role="rename-input"]')) return
 
@@ -7432,10 +7601,13 @@ function createSidebarRenderer(options) {
     event.preventDefault()
     event.stopPropagation()
     if (onOpenContextMenu) onOpenContextMenu(tabId)
+
+    const rootRect = root.getBoundingClientRect()
     contextMenu = {
       tabId,
-      x: event.clientX,
-      y: event.clientY,
+      x: event.clientX - rootRect.left,
+      y: event.clientY - rootRect.top,
+      viewportY: event.clientY,
     }
     renderCurrent()
   }, eventOptions)
@@ -7470,6 +7642,13 @@ function createSidebarRenderer(options) {
     contextMenu = null
     renderCurrent()
   }, { capture: true, signal: eventController.signal })
+
+  window.addEventListener('blur', () => {
+    if (contextMenu) {
+      contextMenu = null
+      renderCurrent()
+    }
+  }, { signal: eventController.signal })
 
   root.addEventListener('keydown', event => {
     const input = event.target.closest('[data-role="rename-input"]')
@@ -7538,16 +7717,26 @@ function createSidebarRenderer(options) {
   function positionContextMenu() {
     const currentShell = ensureShell()
     const menu = currentShell.menuHost.querySelector('.svb-menu')
-    if (!menu) return
+    if (!menu || !contextMenu) return
 
-    const margin = 6
+    const margin = 10
     const rect = menu.getBoundingClientRect()
-    const currentLeft = Number.parseFloat(menu.style.left) || 0
-    const currentTop = Number.parseFloat(menu.style.top) || 0
-    const desiredViewportLeft = Math.max(margin, Math.min(rect.left, window.innerWidth - rect.width - margin))
-    const desiredViewportTop = Math.max(margin, Math.min(rect.top, window.innerHeight - rect.height - margin))
-    menu.style.left = `${currentLeft + desiredViewportLeft - rect.left}px`
-    menu.style.top = `${currentTop + desiredViewportTop - rect.top}px`
+    
+    // Default position: top edge at cursor
+    let top = contextMenu.y
+    
+    // If menu goes below viewport, flip it up or shift it
+    if (contextMenu.viewportY + rect.height > window.innerHeight - margin) {
+      top = contextMenu.y - rect.height
+      // If it now goes above the top, just align with bottom of viewport
+      if (contextMenu.viewportY - rect.height < margin) {
+        const rootRect = root.getBoundingClientRect()
+        top = window.innerHeight - rect.height - margin - rootRect.top
+      }
+    }
+
+    menu.style.left = `${contextMenu.x}px`
+    menu.style.top = `${top}px`
   }
 
   return {
@@ -7740,6 +7929,7 @@ async function main() {
   const dragStore = createDragStore()
   const renderer = createSidebarRenderer({
     root: mount.root,
+    dragShield: mount.dragShield,
     onActivateTab: id => {
       selectionStore.clear()
       store.activateTab(id)

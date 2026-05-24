@@ -271,6 +271,10 @@ function createTabsApi() {
       return vivaldiBridge.createWorkspace(name)
     },
 
+    onWorkspacesChanged(listener) {
+      return vivaldiBridge.onWorkspacesChanged(listener)
+    },
+
     repairWorkspace(workspace) {
       vivaldiBridge.repairWorkspace(workspace)
     },
