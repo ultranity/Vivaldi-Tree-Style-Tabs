@@ -658,6 +658,19 @@ function createSidebarRenderer(options) {
                 </label>
               </div>
             </div>
+            <div class="svb-settings-group">
+              <label class="svb-settings-label">Panel position</label>
+              <div class="svb-settings-options">
+                <label class="svb-settings-option">
+                  <input type="radio" name="panelPosition" value="left">
+                  <span>Left side</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="panelPosition" value="right">
+                  <span>Right side</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>

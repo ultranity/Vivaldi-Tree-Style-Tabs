@@ -66,6 +66,59 @@ const STYLE_TEXT = `
   margin-left: 0 !important;
 }
 
+/* Right-side position overrides */
+.svb-layout-host.svb-position-right #webview-container,
+.svb-layout-host.svb-position-right .StatusInfo,
+.svb-layout-host.svb-position-right #addressbar {
+  margin-left: 0 !important;
+}
+
+.svb-layout-host.svb-position-right.svb-mode-docked #webview-container,
+.svb-layout-host.svb-position-right.svb-mode-docked .StatusInfo,
+.svb-layout-host.svb-position-right.svb-mode-docked #addressbar {
+  margin-right: var(--svb-sidebar-width, 300px) !important;
+}
+
+.svb-layout-host.svb-position-right #svb-root.svb-shell {
+  left: auto !important;
+  right: 0 !important;
+  transform: translateX(100%) !important;
+}
+
+.svb-layout-host.svb-position-right #svb-root.svb-shell.is-revealed,
+.svb-layout-host.svb-mode-docked.svb-position-right #svb-root.svb-shell {
+  transform: translateX(0) !important;
+}
+
+.svb-layout-host.svb-position-right #svb-root-trigger.svb-edge-trigger {
+  left: auto !important;
+  right: 0 !important;
+}
+
+.svb-layout-host.svb-position-right #svb-root .svb-resize-handle {
+  right: auto;
+  left: -5px;
+}
+
+.svb-layout-host.svb-position-right #svb-root .svb-header {
+  grid-template-columns: auto auto 1fr;
+}
+
+.svb-layout-host.svb-position-right #svb-root .svb-header__left {
+  grid-column: 3;
+  justify-self: end;
+  flex-direction: row-reverse;
+}
+
+.svb-layout-host.svb-position-right #svb-root .svb-header__actions {
+  grid-column: 1;
+}
+
+.svb-layout-host.svb-position-right #svb-root .svb-header__count {
+  grid-column: 2;
+  margin-right: 8px;
+}
+
 #svb-root.svb-shell {
   --svb-bg: var(--svb-theme-panel-bg, #232629);
   --svb-panel: var(--svb-theme-tab-bg, #2d3136);
@@ -1326,6 +1379,7 @@ const DEFAULT_SETTINGS = {
   childPosition: 'bottom',
   activateAfterClose: 'above',
   doubleClickAction: 'rename',
+  panelPosition: 'left',
 }
 
 function createSettingsStore() {
@@ -6393,6 +6447,8 @@ module.exports = { createThemeAdapter }
 
     },
     "adapters/layout.js": function(require, module, exports) {
+const { settingsStore } = require('../store/settings-store.js')
+
 function createLayoutAdapter(options) {
   const { root, host, trigger, dragShield, panelStore } = options
   const MIN_WIDTH = 30
@@ -6463,6 +6519,10 @@ function createLayoutAdapter(options) {
     currentHost.classList.toggle('svb-mode-docked', currentPinned)
     currentHost.classList.toggle('svb-mode-overlay', !currentPinned)
     currentHost.classList.toggle('svb-is-fullscreen', fullscreen)
+
+    const panelPosition = settingsStore.get('panelPosition')
+    currentHost.classList.toggle('svb-position-right', panelPosition === 'right')
+
     root.classList.toggle('is-revealed', !fullscreen && (currentPinned || revealed))
     trigger.classList.toggle('is-enabled', !fullscreen && !currentPinned)
     dragShield.classList.toggle('is-active', !fullscreen && Boolean(dragState))
@@ -6516,11 +6576,15 @@ function createLayoutAdapter(options) {
     
     const hostRect = currentHost.getBoundingClientRect()
     let frameRequested = false
+    const panelPosition = settingsStore.get('panelPosition')
+    const isRight = panelPosition === 'right'
 
     const onPointerMove = moveEvent => {
       if (!dragState || frameRequested) return
       
-      const nextWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(moveEvent.clientX - hostRect.left)))
+      const nextWidth = isRight
+        ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(hostRect.right - moveEvent.clientX)))
+        : Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(moveEvent.clientX - hostRect.left)))
       
       if (dragState.previewWidth !== nextWidth) {
         frameRequested = true
@@ -7273,6 +7337,19 @@ function createSidebarRenderer(options) {
                 <label class="svb-settings-option">
                   <input type="radio" name="doubleClickAction" value="close">
                   <span>Close tab</span>
+                </label>
+              </div>
+            </div>
+            <div class="svb-settings-group">
+              <label class="svb-settings-label">Panel position</label>
+              <div class="svb-settings-options">
+                <label class="svb-settings-option">
+                  <input type="radio" name="panelPosition" value="left">
+                  <span>Left side</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="panelPosition" value="right">
+                  <span>Right side</span>
                 </label>
               </div>
             </div>

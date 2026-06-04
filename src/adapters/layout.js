@@ -1,3 +1,5 @@
+const { settingsStore } = require('../store/settings-store.js')
+
 function createLayoutAdapter(options) {
   const { root, host, trigger, dragShield, panelStore } = options
   const MIN_WIDTH = 30
@@ -68,6 +70,10 @@ function createLayoutAdapter(options) {
     currentHost.classList.toggle('svb-mode-docked', currentPinned)
     currentHost.classList.toggle('svb-mode-overlay', !currentPinned)
     currentHost.classList.toggle('svb-is-fullscreen', fullscreen)
+
+    const panelPosition = settingsStore.get('panelPosition')
+    currentHost.classList.toggle('svb-position-right', panelPosition === 'right')
+
     root.classList.toggle('is-revealed', !fullscreen && (currentPinned || revealed))
     trigger.classList.toggle('is-enabled', !fullscreen && !currentPinned)
     dragShield.classList.toggle('is-active', !fullscreen && Boolean(dragState))
@@ -121,11 +127,15 @@ function createLayoutAdapter(options) {
     
     const hostRect = currentHost.getBoundingClientRect()
     let frameRequested = false
+    const panelPosition = settingsStore.get('panelPosition')
+    const isRight = panelPosition === 'right'
 
     const onPointerMove = moveEvent => {
       if (!dragState || frameRequested) return
       
-      const nextWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(moveEvent.clientX - hostRect.left)))
+      const nextWidth = isRight
+        ? Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(hostRect.right - moveEvent.clientX)))
+        : Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, Math.round(moveEvent.clientX - hostRect.left)))
       
       if (dragState.previewWidth !== nextWidth) {
         frameRequested = true

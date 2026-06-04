@@ -3,6 +3,7 @@ const DEFAULT_SETTINGS = {
   childPosition: 'bottom',
   activateAfterClose: 'above',
   doubleClickAction: 'rename',
+  panelPosition: 'left',
 }
 
 function createSettingsStore() {
