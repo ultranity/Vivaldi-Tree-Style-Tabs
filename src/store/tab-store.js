@@ -954,6 +954,7 @@ function createTabStore(api) {
       treeController.registerExpectedCreation({
         kind,
         parentTabId: targetId,
+        position,
       })
 
       const index = position === 'inside' 

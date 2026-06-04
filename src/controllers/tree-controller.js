@@ -134,6 +134,7 @@ function createTreeController(api) {
             ? 'sibling'
             : 'root',
         parentTabId: Number.isFinite(creation.parentTabId) ? creation.parentTabId : null,
+        position: creation.position || null,
         createdAt: Date.now(),
       })
     },
@@ -374,15 +375,20 @@ function createTreeController(api) {
         } else if (expectedCreation && expectedCreation.kind === 'sibling' && Number.isFinite(expectedCreation.parentTabId)) {
           const siblingAnchorId = expectedCreation.parentTabId
           const siblingParentId = treeStore.getParentId(siblingAnchorId)
+          const isBefore = expectedCreation.position === 'before'
+
           if (Number.isFinite(siblingParentId)) {
-            const attached = treeStore.attachAfter(tab.id, siblingAnchorId)
+            const attached = isBefore
+              ? treeStore.attachBefore(tab.id, siblingAnchorId)
+              : treeStore.attachAfter(tab.id, siblingAnchorId)
             persistenceDirty = attached || persistenceDirty
             structuralDirty = attached || structuralDirty
           } else {
             const currentTreeState = treeStore.exportState()
             const rootIds = Array.isArray(currentTreeState.rootIds) ? currentTreeState.rootIds : []
             const rootIndex = rootIds.indexOf(siblingAnchorId)
-            const moved = treeStore.moveRoot(tab.id, rootIndex === -1 ? undefined : rootIndex + 1)
+            const targetIndex = rootIndex === -1 ? undefined : (isBefore ? rootIndex : rootIndex + 1)
+            const moved = treeStore.moveRoot(tab.id, targetIndex)
             persistenceDirty = moved || persistenceDirty
             structuralDirty = moved || structuralDirty
           }
