@@ -8,6 +8,7 @@ const { createTabsApi } = require('./adapters/tabs-api.js')
 const { createThemeAdapter } = require('./adapters/theme.js')
 const { createLayoutAdapter } = require('./adapters/layout.js')
 const { createSidebarRenderer } = require('./ui/render.js')
+const { settingsStore } = require('./store/settings-store.js')
 
 const APP_ID = 'svb-root'
 
@@ -69,6 +70,7 @@ async function main() {
   const theme = createThemeAdapter(mount.root)
   const panelStore = createPanelStore()
   await panelStore.init()
+  await settingsStore.init()
   const layout = createLayoutAdapter({
     root: mount.root,
     host: mount.host,
