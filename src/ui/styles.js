@@ -67,22 +67,22 @@ const STYLE_TEXT = `
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header {
-  grid-template-columns: auto auto 1fr;
+  grid-template-columns: auto 1fr;
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header__left {
-  grid-column: 3;
+  grid-column: 2;
   justify-self: end;
   flex-direction: row-reverse;
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header__actions {
   grid-column: 1;
+  flex-direction: row-reverse;
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header__count {
-  grid-column: 2;
-  margin-right: 8px;
+  margin: 0 0 0 8px;
 }
 
 #svb-root.svb-shell {
