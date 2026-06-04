@@ -1995,6 +1995,35 @@ module.exports = { createTreeStore }
 const TREE_NAMESPACE_KEY = 'svbTree'
 const TREE_VERSION = 1
 
+const treeMetadataCache = new Map()
+
+function updateMetadataCache(tabId, record) {
+  if (!record || !record.nodeId) return
+  treeMetadataCache.set(tabId, { ...record })
+}
+
+function getCachedMetadata(tabId) {
+  return treeMetadataCache.get(tabId) || null
+}
+
+function getCachedNodeId(tabId, existingNodeId) {
+  if (existingNodeId) {
+    const entry = treeMetadataCache.get(tabId) || {}
+    entry.nodeId = existingNodeId
+    treeMetadataCache.set(tabId, entry)
+    return existingNodeId
+  }
+  const cached = getCachedMetadata(tabId)
+  if (cached && cached.nodeId) {
+    return cached.nodeId
+  }
+  const newNodeId = `svb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
+  const entry = treeMetadataCache.get(tabId) || {}
+  entry.nodeId = newNodeId
+  treeMetadataCache.set(tabId, entry)
+  return newNodeId
+}
+
 function cloneTreeState(treeState) {
   const next = { rootIds: [], nodesById: {} }
   const nodesById = treeState && treeState.nodesById
@@ -2021,10 +2050,6 @@ function cloneVivExtData(value) {
     : {}
 }
 
-function createNodeId() {
-  return `svb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
-}
-
 function normalizeOrder(value) {
   const order = Number(value)
   return Number.isFinite(order) ? order : 0
@@ -2038,9 +2063,16 @@ function getTreeRecord(tab) {
     ? vivExtData[TREE_NAMESPACE_KEY]
     : null
 
-  if (!record || typeof record.nodeId !== 'string' || !record.nodeId) return null
+  if (!record || typeof record.nodeId !== 'string' || !record.nodeId) {
+    // If the tab is hibernated and we have no record, try the session cache
+    if (tab && tab.discarded) {
+      const cached = getCachedMetadata(tab.id)
+      if (cached) return cached
+    }
+    return null
+  }
 
-  return {
+  const result = {
     version: Number(record.version) || TREE_VERSION,
     contextKey: typeof record.contextKey === 'string' ? record.contextKey : null,
     nodeId: record.nodeId,
@@ -2048,6 +2080,11 @@ function getTreeRecord(tab) {
     collapsed: !!record.collapsed,
     order: normalizeOrder(record.order),
   }
+
+  // Update cache with the latest valid data
+  updateMetadataCache(tab.id, result)
+
+  return result
 }
 
 function assignTreeOrders(treeState, tabs) {
@@ -2087,14 +2124,14 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
 
   for (const tab of tabsById.values()) {
     const record = getTreeRecord(tab)
-    const nodeId = record && record.nodeId ? record.nodeId : createNodeId()
+    const nodeId = getCachedNodeId(tab.id, record && record.nodeId)
     if (!tabIdByNodeId.has(nodeId)) {
       nodeIdByTabId.set(tab.id, nodeId)
       tabIdByNodeId.set(nodeId, tab.id)
       continue
     }
 
-    const uniqueNodeId = createNodeId()
+    const uniqueNodeId = getCachedNodeId(tab.id)
     nodeIdByTabId.set(tab.id, uniqueNodeId)
     tabIdByNodeId.set(uniqueNodeId, tab.id)
   }
@@ -2106,7 +2143,7 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
     const nextRecord = {
       version: TREE_VERSION,
       contextKey,
-      nodeId: nodeIdByTabId.get(tab.id) || createNodeId(),
+      nodeId: nodeIdByTabId.get(tab.id) || getCachedNodeId(tab.id),
       parentNodeId: node.parentId != null ? (nodeIdByTabId.get(node.parentId) || null) : null,
       collapsed: !!node.collapsed,
       order: ordersByTabId.get(tab.id) || 0,
@@ -2122,6 +2159,11 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
 
     const nextVivExtData = cloneVivExtData(tab.vivExtData)
     nextVivExtData[TREE_NAMESPACE_KEY] = nextRecord
+
+    // Ensure workspaceId is preserved from the reliable tab.workspaceId property
+    if (typeof tab.workspaceId !== 'undefined' && tab.workspaceId != null) {
+      nextVivExtData.workspaceId = tab.workspaceId
+    }
 
     payloads.push({
       tabId: tab.id,
@@ -5712,9 +5754,11 @@ function normalizeTab(tab) {
     hidden: !!tab.hidden,
     loading: tab.status === 'loading',
     vivExtData: vivExtData && typeof vivExtData === 'object' ? vivExtData : null,
-    workspaceId: vivExtData && typeof vivExtData.workspaceId !== 'undefined'
-      ? vivExtData.workspaceId
-      : null,
+    workspaceId: (typeof tab.workspaceId !== 'undefined' && tab.workspaceId != null)
+      ? tab.workspaceId
+      : (vivExtData && typeof vivExtData.workspaceId !== 'undefined')
+        ? vivExtData.workspaceId
+        : null,
   }
 }
 

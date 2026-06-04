@@ -144,9 +144,11 @@ function normalizeTab(tab) {
     hidden: !!tab.hidden,
     loading: tab.status === 'loading',
     vivExtData: vivExtData && typeof vivExtData === 'object' ? vivExtData : null,
-    workspaceId: vivExtData && typeof vivExtData.workspaceId !== 'undefined'
-      ? vivExtData.workspaceId
-      : null,
+    workspaceId: (typeof tab.workspaceId !== 'undefined' && tab.workspaceId != null)
+      ? tab.workspaceId
+      : (vivExtData && typeof vivExtData.workspaceId !== 'undefined')
+        ? vivExtData.workspaceId
+        : null,
   }
 }
 
