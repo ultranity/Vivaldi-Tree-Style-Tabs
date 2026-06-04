@@ -2867,7 +2867,8 @@ function createTreeController(api) {
         }
 
         if (parentId != null) {
-          const attached = treeStore.attachTab(tab.id, parentId)
+          const childPosition = settingsStore.get('childPosition')
+          const attached = treeStore.attachTab(tab.id, parentId, childPosition === 'top' ? 0 : undefined)
           persistenceDirty = attached || persistenceDirty
           structuralDirty = attached || structuralDirty
         }
