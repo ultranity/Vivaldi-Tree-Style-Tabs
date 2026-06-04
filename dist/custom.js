@@ -7039,6 +7039,7 @@ function createNodeFromHtml(html) {
   let previousTreeTabsSnapshot = null
   let previousCanCloseVisibleTabs = null
   let previousPanelPinned = null
+  let previousIsSettingsOpen = false
   let previousSelectedIds = []
   let previousDraggedIds = []
   let previousDropTargetId = null
@@ -7371,17 +7372,17 @@ function createNodeFromHtml(html) {
     currentShell.collapseAllButton.className = `svb-icon-button${canCollapseAll ? '' : ' is-disabled'}`
     currentShell.collapseAllButton.disabled = !canCollapseAll
     currentShell.collapseAllButton.innerHTML = renderCollapseAllIcon()
-    shell.pinButton.className = `svb-icon-button${state.panelPinned ? ' is-active' : ''}`
-    shell.pinButton.title = state.panelPinned ? 'Unpin panel' : 'Pin panel'
-    shell.pinButton.innerHTML = renderPinIcon(state.panelPinned)
-    shell.settingsButton.innerHTML = renderMenuIcon('settings')
-    shell.pinnedSection.style.display = state.pinnedTabs.length ? '' : 'none'
-    shell.mainView.style.display = isSettingsOpen ? 'none' : 'flex'
-    shell.settingsView.style.display = isSettingsOpen ? 'flex' : 'none'
+    currentShell.pinButton.className = `svb-icon-button${state.panelPinned ? ' is-active' : ''}`
+    currentShell.pinButton.title = state.panelPinned ? 'Unpin panel' : 'Pin panel'
+    currentShell.pinButton.innerHTML = renderPinIcon(state.panelPinned)
+    currentShell.settingsButton.innerHTML = renderMenuIcon('settings')
+    currentShell.pinnedSection.style.display = state.pinnedTabs.length ? '' : 'none'
+    currentShell.mainView.style.display = isSettingsOpen ? 'none' : 'flex'
+    currentShell.settingsView.style.display = isSettingsOpen ? 'flex' : 'none'
 
     if (isSettingsOpen) {
       const settings = getSettings()
-      const inputs = shell.settingsView.querySelectorAll('input')
+      const inputs = currentShell.settingsView.querySelectorAll('input')
       for (const input of inputs) {
         if (input.name in settings) {
           input.checked = settings[input.name] === input.value
@@ -7471,7 +7472,7 @@ function createNodeFromHtml(html) {
       }
     }
 
-    if (previousPanelPinned !== state.panelPinned) {
+    if (previousPanelPinned !== state.panelPinned || previousIsSettingsOpen !== isSettingsOpen) {
       updateShellControls(currentShell, state, treeTabs)
     }
 
@@ -8400,6 +8401,7 @@ function createNodeFromHtml(html) {
       previousActiveTabId = state.activeTabId
       previousCanCloseVisibleTabs = state.canCloseVisibleTabs
       previousPanelPinned = state.panelPinned
+      previousIsSettingsOpen = isSettingsOpen
       previousSelectedIds = visualState.selectedIds.slice()
       previousDraggedIds = visualState.draggedIds.slice()
       previousDropTargetId = visualState.dropTargetId
