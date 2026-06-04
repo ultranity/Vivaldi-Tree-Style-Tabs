@@ -59,7 +59,7 @@ const STYLE_TEXT = `
   bottom: 0 !important;
   margin: 0 !important;
   width: var(--svb-sidebar-width, 300px);
-  z-index: 1000;
+  z-index: 5;
   pointer-events: auto;
   font-family: "Segoe UI", "Noto Sans", sans-serif;
   font-size: 13px;
@@ -115,7 +115,7 @@ body.svb-is-resizing {
   left: 0 !important;
   bottom: 0 !important;
   width: 12px;
-  z-index: 100000;
+  z-index: 10;
   display: none;
   pointer-events: auto;
 }

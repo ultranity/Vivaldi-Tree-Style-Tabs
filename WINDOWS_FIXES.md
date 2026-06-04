@@ -171,7 +171,7 @@ Update the following CSS blocks in `STYLE_TEXT`:
   left: 0 !important;
   bottom: 0 !important;
   margin: 0 !important;
-  z-index: 1000;
+  z-index: 5;
   transform: translateX(-100%) !important; /* Fixed: no +2px gap */
 }
 
@@ -189,7 +189,7 @@ Update the following CSS blocks in `STYLE_TEXT`:
   left: 0 !important;
   bottom: 0 !important;
   width: 12px; /* Increased for better hit detection */
-  z-index: 100000;
+  z-index: 10;
   display: none;
   pointer-events: auto;
 }
