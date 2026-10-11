@@ -678,23 +678,6 @@ body.svb-is-resizing {
   color: var(--svb-text-muted);
 }
 
-#svb-root .svb-tab.is-stacked .svb-tab__body::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 4px;
-  bottom: 4px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--svb-stack-color, var(--svb-accent));
-  pointer-events: none;
-  z-index: 2;
-}
-
-#svb-root .svb-tab.is-stacked .svb-tab__content {
-  padding-left: 4px;
-}
-
 #svb-root .svb-tab.is-compact .svb-tab__outer {
   width: 100%;
   margin-left: 0;
@@ -1370,32 +1353,31 @@ body.svb-is-resizing {
 
 #svb-root .svb-workspaces {
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  padding: 0 4px 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 0 6px 6px;
 }
 
-#svb-root .svb-workspaces::-webkit-scrollbar {
-  height: 0;
+#svb-root .svb-workspaces__icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 #svb-root .svb-workspace {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   flex: 0 0 auto;
-  max-width: 140px;
-  min-height: 26px;
-  padding: 0 9px;
-  border: 1px solid var(--svb-border);
-  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   color: var(--svb-text-muted);
   background: transparent;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 #svb-root .svb-workspace:hover {
@@ -1409,30 +1391,49 @@ body.svb-is-resizing {
   background: var(--svb-accent-soft);
 }
 
-#svb-root .svb-workspace .svb-menu__icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
+#svb-root .svb-workspace__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
 }
 
-#svb-root .svb-workspace__label {
-  min-width: 0;
+#svb-root .svb-workspace__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+#svb-root .svb-workspace__icon--text {
+  font-size: 15px;
+}
+
+#svb-root .svb-workspace--add {
+  border-style: dashed;
+  border-color: var(--svb-border);
+}
+
+#svb-root .svb-workspaces__title {
+  min-height: 18px;
+  padding: 0 2px;
   overflow: hidden;
+  color: var(--svb-text-strong);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-#svb-root .svb-workspace--add {
-  width: 26px;
-  padding: 0;
-  justify-content: center;
+#svb-root .svb-workspaces__title.is-preview {
+  color: var(--svb-text-muted);
+  font-weight: 500;
 }
 
 #svb-root .svb-workspace__input {
-  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  max-width: 100%;
   min-height: 26px;
   padding: 0 10px;
   box-sizing: border-box;
@@ -7185,44 +7186,68 @@ function getActiveWorkspaceKey(state) {
   return state.activeWorkspaceId == null ? 'none' : Number(state.activeWorkspaceId)
 }
 
-// A switcher row of the window's native workspaces. Clicking a chip switches
-// the active workspace (and the browser follows). Hidden when there are no
-// workspaces, so single-workspace users see no extra chrome.
+// Native workspace icons are either Vivaldi SVG markup or an emoji. Only a
+// plain <svg> without scripts/handlers is inlined; anything else is text.
+function renderWorkspaceIcon(icon, fallback) {
+  const value = typeof icon === 'string' ? icon.trim() : ''
+  if (/^<svg[\s>]/i.test(value) && !/<script|\son\w+\s*=|javascript:/i.test(value)) {
+    return `<span class="svb-workspace__icon">${value}</span>`
+  }
+  if (value && !value.startsWith('<') && [...value].length <= 4) {
+    return `<span class="svb-workspace__icon svb-workspace__icon--text">${escapeHtml(value)}</span>`
+  }
+  return `<span class="svb-workspace__icon">${renderMenuIcon(fallback)}</span>`
+}
+
+function getWorkspaceBarEntries(state) {
+  const workspaces = Array.isArray(state.workspaces) ? state.workspaces : []
+  const activeKey = getActiveWorkspaceKey(state)
+  const entries = []
+
+  if (state.hasTabsOutsideWorkspace) {
+    entries.push({ id: '', name: 'Default', icon: null, fallback: 'window', isActive: activeKey === 'outside' || activeKey === 'none' })
+  }
+
+  for (const workspace of workspaces) {
+    const id = Number(workspace.id)
+    if (!Number.isFinite(id)) continue
+    entries.push({ id, name: workspace.name || `Workspace ${id}`, icon: workspace.icon, fallback: 'workspace', isActive: activeKey === id })
+  }
+
+  return entries
+}
+
+// Workspace switcher, modeled on Vivaldi's own workspace popup: a row of
+// icon buttons that wraps to the panel width, with a full-width title line
+// underneath naming the active workspace (or the one under the pointer).
+// Hidden when there are no workspaces, so single-workspace users see no
+// extra chrome.
 function renderWorkspaceBar(state, creating, renamingId) {
   const workspaces = Array.isArray(state.workspaces) ? state.workspaces : []
   if (workspaces.length === 0) return ''
 
-  // While naming/renaming, the bar becomes a single full-width input. Keeping
-  // the input out of the horizontally-scrolling chip row avoids IME/focus-scroll
-  // pushing the whole UI off-screen, and keeps the field fully visible.
+  const entries = getWorkspaceBarEntries(state)
+  const active = entries.find(entry => entry.isActive) || null
+
+  const buttons = entries.map(entry => `<button class="svb-workspace${entry.isActive ? ' is-active' : ''}" data-role="switch-workspace" data-workspace-id="${entry.id}" data-workspace-name="${escapeHtml(entry.name)}" title="${escapeHtml(entry.name)}" aria-label="${escapeHtml(entry.name)}">${renderWorkspaceIcon(entry.icon, entry.fallback)}</button>`)
+  buttons.push(`<button class="svb-workspace svb-workspace--add" data-role="create-workspace" data-workspace-name="New workspace" title="New workspace" aria-label="New workspace">${renderMenuIcon('add')}</button>`)
+
+  // While naming/renaming, the title line becomes the input so the field is
+  // full-width and never scrolls the panel.
+  let titleLine
   if (creating || renamingId != null) {
     let value = ''
     if (renamingId != null) {
       const target = workspaces.find(workspace => Number(workspace.id) === Number(renamingId))
       value = target ? (target.name || '') : ''
     }
-    return `<input class="svb-workspace__input" data-role="workspace-name-input" placeholder="Workspace name" spellcheck="false" maxlength="60" value="${escapeHtml(value)}">`
+    titleLine = `<input class="svb-workspace__input" data-role="workspace-name-input" placeholder="Workspace name" spellcheck="false" maxlength="60" value="${escapeHtml(value)}">`
+  } else {
+    const activeName = active ? active.name : ''
+    titleLine = `<div class="svb-workspaces__title" data-active-name="${escapeHtml(activeName)}">${escapeHtml(activeName)}</div>`
   }
 
-  const activeKey = getActiveWorkspaceKey(state)
-  const chips = []
-
-  if (state.hasTabsOutsideWorkspace) {
-    const isActive = activeKey === 'outside' || activeKey === 'none'
-    chips.push(`<button class="svb-workspace${isActive ? ' is-active' : ''}" data-role="switch-workspace" data-workspace-id="" title="Tabs outside workspaces">${renderMenuIcon('window')}<span class="svb-workspace__label">Default</span></button>`)
-  }
-
-  for (const workspace of workspaces) {
-    const id = Number(workspace.id)
-    if (!Number.isFinite(id)) continue
-    const name = workspace.name || `Workspace ${id}`
-    const isActive = activeKey === id
-    chips.push(`<button class="svb-workspace${isActive ? ' is-active' : ''}" data-role="switch-workspace" data-workspace-id="${id}" title="${escapeHtml(name)}">${renderMenuIcon('workspace')}<span class="svb-workspace__label">${escapeHtml(name)}</span></button>`)
-  }
-
-  chips.push(`<button class="svb-workspace svb-workspace--add" data-role="create-workspace" title="New workspace" aria-label="New workspace">${renderMenuIcon('add')}</button>`)
-
-  return chips.join('')
+  return `<div class="svb-workspaces__icons">${buttons.join('')}</div>${titleLine}`
 }
 
 function workspaceBarSignature(state, creating, renamingId) {
@@ -7233,7 +7258,7 @@ function workspaceBarSignature(state, creating, renamingId) {
     renamingId != null ? `rename:${renamingId}` : '',
     getActiveWorkspaceKey(state),
     state.hasTabsOutsideWorkspace ? 'd' : '',
-    ...workspaces.map(workspace => `${workspace.id}:${workspace.name || ''}`),
+    ...workspaces.map(workspace => `${workspace.id}:${workspace.name || ''}:${workspace.icon || ''}`),
   ].join('|')
 }
 
@@ -7584,22 +7609,6 @@ function syncTabContent(content, tab, editing) {
   syncOptionalDirectChild(content, '.svb-tab__badge', renderTabBadge(tab), null)
 }
 
-// A tab's Vivaldi tab-stack ("group") id, or '' if not stacked.
-function getStackId(tab) {
-  const group = tab && tab.vivExtData ? tab.vivExtData.group : null
-  return group == null || group === '' ? '' : String(group)
-}
-
-// Stable color derived from the stack id, so a stack's members share a hue.
-function getStackColor(stackId) {
-  if (!stackId) return ''
-  let hash = 0
-  for (let index = 0; index < stackId.length; index += 1) {
-    hash = ((hash << 5) - hash + stackId.charCodeAt(index)) | 0
-  }
-  return `hsl(${Math.abs(hash) % 360}deg 60% 58%)`
-}
-
 function getTabVisualStyle(tab) {
   const styles = []
   const tiling = tab && tab.vivExtData && tab.vivExtData.tiling
@@ -7611,11 +7620,6 @@ function getTabVisualStyle(tab) {
 
   if (tabColor) {
     styles.push(`--svb-tab-color:${tabColor}`)
-  }
-
-  const stackId = getStackId(tab)
-  if (stackId) {
-    styles.push(`--svb-stack-color:${getStackColor(stackId)}`)
   }
 
   if (!tileId) {
@@ -7699,15 +7703,13 @@ function renderTab(tab, compact, canClose, item, editing, visualState) {
   const coloredClass = tab.vivExtData && tab.vivExtData.tabColor && TAB_COLOR_SWATCHES[tab.vivExtData.tabColor]
     ? ' is-colored'
     : ''
-  const stackId = getStackId(tab)
-  const stackedClass = stackId && visualState && visualState.stackIds && visualState.stackIds.has(stackId) ? ' is-stacked' : ''
-  const visualStyle = (tiledClass || coloredClass || stackedClass) ? getTabVisualStyle(tab) : ''
+  const visualStyle = (tiledClass || coloredClass) ? getTabVisualStyle(tab) : ''
   const title = editing
     ? `<input class="svb-tab__title-input" data-role="rename-input" data-tab-id="${tab.id}" value="${escapeHtml(tab.title)}" spellcheck="false">`
     : `<span class="svb-tab__title">${escapeHtml(tab.title)}</span>`
 
   return `
-    <button class="${tabClass}${coloredClass}${stackedClass}${rowVisualState.isActive ? ' is-active' : ''}" data-role="activate-tab" data-tab-id="${tab.id}" data-visible-index="${visibleIndex}" data-depth="${depth}" data-parent-id="${parentId}" data-subtree-size="${subtreeSize}" data-ancestor-ids="${escapeHtml(ancestorIds)}" data-drop-position="${dropPosition}" data-parent="${hasChildren}" data-folded="${isCollapsed}" title="${escapeHtml(tab.title)}"${visualStyle ? ` style="${visualStyle}"` : ''}>
+    <button class="${tabClass}${coloredClass}${rowVisualState.isActive ? ' is-active' : ''}" data-role="activate-tab" data-tab-id="${tab.id}" data-visible-index="${visibleIndex}" data-depth="${depth}" data-parent-id="${parentId}" data-subtree-size="${subtreeSize}" data-ancestor-ids="${escapeHtml(ancestorIds)}" data-drop-position="${dropPosition}" data-parent="${hasChildren}" data-folded="${isCollapsed}" title="${escapeHtml(tab.title)}"${visualStyle ? ` style="${visualStyle}"` : ''}>
       <span class="svb-tab__outer" style="--svb-depth:${depth};--svb-visible-branch-size:${visibleBranchSize}">
         ${compact ? '' : renderTreeGuides(item)}
         <span class="svb-tab__body">
@@ -8048,26 +8050,11 @@ function createSidebarRenderer(options) {
     const selectedIds = Array.isArray(state.selectedIds) ? state.selectedIds : []
     const dragState = state && state.drag ? state.drag : null
 
-    // A real tab stack has >= 2 members sharing a group id among the visible
-    // tabs. Gating on this avoids painting a rail on a lone/leftover group id
-    // (and the all-tabs-flash seen right after a native workspace switch).
-    const groupCounts = new Map()
-    const countGroup = tab => {
-      const id = getStackId(tab)
-      if (id) groupCounts.set(id, (groupCounts.get(id) || 0) + 1)
-    }
-    if (Array.isArray(state.pinnedTabs)) state.pinnedTabs.forEach(countGroup)
-    if (Array.isArray(state.tabs)) state.tabs.forEach(countGroup)
-    const stackIds = new Set()
-    for (const [id, count] of groupCounts) {
-      if (count >= 2) stackIds.add(id)
-    }
 
     return {
       activeTabId: Number.isFinite(state.activeTabId) ? state.activeTabId : null,
       selectedIds,
       selectedIdSet: new Set(selectedIds),
-      stackIds,
       draggedIds: Array.isArray(dragState && dragState.draggedIds) ? dragState.draggedIds : [],
       draggedIdSet: new Set(Array.isArray(dragState && dragState.draggedIds) ? dragState.draggedIds : []),
       dropTargetId: dragState ? dragState.dropTargetId : null,
@@ -8139,7 +8126,6 @@ function createSidebarRenderer(options) {
       || !!previousTab.discarded !== !!nextTab.discarded
       || getTilingId(previousTab) !== getTilingId(nextTab)
       || getTabColorKey(previousTab) !== getTabColorKey(nextTab)
-      || getStackId(previousTab) !== getStackId(nextTab)
   }
 
   function collectContentChangedIds(previousPinnedTabs, nextPinnedTabs, previousTreeItems, nextTreeItems) {
@@ -8338,11 +8324,9 @@ function createSidebarRenderer(options) {
     const coloredClass = tab.vivExtData && tab.vivExtData.tabColor && TAB_COLOR_SWATCHES[tab.vivExtData.tabColor]
       ? ' is-colored'
       : ''
-    const stackId = getStackId(tab)
-    const stackedClass = stackId && visualState && visualState.stackIds && visualState.stackIds.has(stackId) ? ' is-stacked' : ''
-    const visualStyle = (tiledClass || coloredClass || stackedClass) ? getTabVisualStyle(tab) : ''
+    const visualStyle = (tiledClass || coloredClass) ? getTabVisualStyle(tab) : ''
 
-    node.className = `${tabClass}${coloredClass}${stackedClass}${rowVisualState.isActive ? ' is-active' : ''}`
+    node.className = `${tabClass}${coloredClass}${rowVisualState.isActive ? ' is-active' : ''}`
     node.setAttribute('data-role', 'activate-tab')
     node.setAttribute('data-tab-id', String(tab.id))
     node.setAttribute('data-visible-index', String(visibleIndex))
@@ -9092,9 +9076,25 @@ function createSidebarRenderer(options) {
 
   root.addEventListener('pointerover', event => {
     const menuItem = event.target.closest('.svb-menu__item.has-submenu')
-    if (!menuItem) return
-    positionSubmenu(menuItem)
+    if (menuItem) positionSubmenu(menuItem)
+    syncWorkspaceTitle(event.target.closest('.svb-workspace[data-workspace-name]'))
   }, eventOptions)
+
+  root.addEventListener('pointerout', event => {
+    if (!event.target.closest('.svb-workspace[data-workspace-name]')) return
+    const next = event.relatedTarget instanceof Element ? event.relatedTarget.closest('.svb-workspace[data-workspace-name]') : null
+    syncWorkspaceTitle(next)
+  }, eventOptions)
+
+  // The title line under the workspace icons previews the hovered workspace
+  // and falls back to the active one. Text-only update; no re-render.
+  function syncWorkspaceTitle(button) {
+    const title = shell && shell.workspaceBar ? shell.workspaceBar.querySelector('.svb-workspaces__title') : null
+    if (!title) return
+    const text = button ? button.getAttribute('data-workspace-name') : title.getAttribute('data-active-name')
+    if (title.textContent !== text) title.textContent = text || ''
+    title.classList.toggle('is-preview', !!button && !button.classList.contains('is-active'))
+  }
 
   document.addEventListener('keydown', event => {
     if (event.key === 'Escape' && pointerDrag) {

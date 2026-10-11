@@ -644,23 +644,6 @@ body.svb-is-resizing {
   color: var(--svb-text-muted);
 }
 
-#svb-root .svb-tab.is-stacked .svb-tab__body::before {
-  content: '';
-  position: absolute;
-  left: 2px;
-  top: 4px;
-  bottom: 4px;
-  width: 3px;
-  border-radius: 3px;
-  background: var(--svb-stack-color, var(--svb-accent));
-  pointer-events: none;
-  z-index: 2;
-}
-
-#svb-root .svb-tab.is-stacked .svb-tab__content {
-  padding-left: 4px;
-}
-
 #svb-root .svb-tab.is-compact .svb-tab__outer {
   width: 100%;
   margin-left: 0;
@@ -1336,32 +1319,31 @@ body.svb-is-resizing {
 
 #svb-root .svb-workspaces {
   display: flex;
+  flex-direction: column;
   gap: 4px;
-  padding: 0 4px 6px;
-  overflow-x: auto;
-  scrollbar-width: none;
+  padding: 0 6px 6px;
 }
 
-#svb-root .svb-workspaces::-webkit-scrollbar {
-  height: 0;
+#svb-root .svb-workspaces__icons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
 #svb-root .svb-workspace {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
   flex: 0 0 auto;
-  max-width: 140px;
-  min-height: 26px;
-  padding: 0 9px;
-  border: 1px solid var(--svb-border);
-  border-radius: 999px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 7px;
   color: var(--svb-text-muted);
   background: transparent;
   cursor: pointer;
   font: inherit;
-  font-size: 12px;
-  white-space: nowrap;
 }
 
 #svb-root .svb-workspace:hover {
@@ -1375,30 +1357,49 @@ body.svb-is-resizing {
   background: var(--svb-accent-soft);
 }
 
-#svb-root .svb-workspace .svb-menu__icon {
-  width: 14px;
-  height: 14px;
-  flex: 0 0 auto;
+#svb-root .svb-workspace__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  line-height: 1;
 }
 
-#svb-root .svb-workspace__label {
-  min-width: 0;
+#svb-root .svb-workspace__icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+#svb-root .svb-workspace__icon--text {
+  font-size: 15px;
+}
+
+#svb-root .svb-workspace--add {
+  border-style: dashed;
+  border-color: var(--svb-border);
+}
+
+#svb-root .svb-workspaces__title {
+  min-height: 18px;
+  padding: 0 2px;
   overflow: hidden;
+  color: var(--svb-text-strong);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 18px;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
 
-#svb-root .svb-workspace--add {
-  width: 26px;
-  padding: 0;
-  justify-content: center;
+#svb-root .svb-workspaces__title.is-preview {
+  color: var(--svb-text-muted);
+  font-weight: 500;
 }
 
 #svb-root .svb-workspace__input {
-  flex: 1 1 auto;
   width: 100%;
   min-width: 0;
-  max-width: 100%;
   min-height: 26px;
   padding: 0 10px;
   box-sizing: border-box;
