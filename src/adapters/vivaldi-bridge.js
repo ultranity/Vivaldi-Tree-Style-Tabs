@@ -156,7 +156,33 @@ function getVivaldiMainView() {
 
   return {
     async getWorkspaces() {
-      // 1. Try internal WorkspaceStore (Most reliable in Vivaldi 8)
+      // 1. Try Prefs (Guaranteed to be instantly updated by Vivaldi when workspaces change)
+      const prefsApi = getPrefsApi()
+      if (prefsApi && typeof prefsApi.get === 'function') {
+        try {
+          const workspaces = await promisifyChromeApi(prefsApi.get, 'vivaldi.workspaces.list')
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {
+          console.warn('[svb] prefs workspaces fetch failed:', e)
+        }
+      }
+
+      // 2. Try native API
+      const workspacesApi = typeof vivaldi !== 'undefined' && vivaldi.workspaces
+      if (workspacesApi && typeof workspacesApi.getAll === 'function') {
+        try {
+          const workspaces = await promisifyChromeApi(workspacesApi.getAll)
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {
+          console.warn('[svb] native workspaces.getAll failed:', e)
+        }
+      }
+
+      // 3. Fallback to internal WorkspaceStore
       const store = getWorkspaceStore()
       if (store) {
         try {
@@ -168,28 +194,6 @@ function getVivaldiMainView() {
           console.warn('[svb] WorkspaceStore fetch failed:', e)
         }
       }
-
-      // 2. Fallback to native API
-      const workspacesApi = typeof vivaldi !== 'undefined' && vivaldi.workspaces
-      if (workspacesApi && typeof workspacesApi.getAll === 'function') {
-        try {
-          const workspaces = await promisifyChromeApi(workspacesApi.getAll)
-          if (Array.isArray(workspaces) && workspaces.length > 0) {
-            return workspaces.map(normalizeWorkspace).filter(Boolean)
-          }
-        } catch (e) {}
-      }
-
-      // 3. Fallback to Prefs
-      const prefsApi = getPrefsApi()
-      if (!prefsApi || typeof prefsApi.get !== 'function') return []
-      
-      try {
-        const workspaces = await promisifyChromeApi(prefsApi.get, 'vivaldi.workspaces.list')
-        if (Array.isArray(workspaces)) {
-          return workspaces.map(normalizeWorkspace).filter(Boolean)
-        }
-      } catch (e) {}
 
       return []
     },
@@ -390,7 +394,6 @@ function getVivaldiMainView() {
           nativeTarget = pages
         }
 
-        console.log('[svb] detaching native pages:', pages.length, 'using', nativeTarget?.constructor?.name || typeof nativeTarget)
         await detachPage(nativeTarget)
         return true
       } catch (error) {
@@ -401,31 +404,45 @@ function getVivaldiMainView() {
 
     setSelectedTabs(tabIds) {
       const ids = Array.isArray(tabIds) ? tabIds.map(Number).filter(Number.isFinite) : []
-      const actions = getPageActions()
+      const actions = findModuleByExports(m => typeof m.setSelection === 'function') || getPageActions()
       const store = getPageStore()
       
       const setSelection = actions && typeof actions.setSelection === 'function' ? actions.setSelection : null
       const clearSelection = actions && typeof actions.clearSelection === 'function' ? actions.clearSelection : null
       const getPageById = store && typeof store.getPageById === 'function' ? store.getPageById.bind(store) : null
 
-      if (!setSelection || !getPageById) return false
+      const reduxStore = findModuleByExports(m => m && typeof m.getState === 'function' && typeof m.dispatch === 'function')
+
+      if (!getPageById) return false
 
       try {
-        // 1. Clear existing selection if we have new IDs to select
-        if (ids.length > 0 && typeof clearSelection === 'function') {
+        // 1. Clear existing selection if possible as a safeguard.
+        if (ids.length > 0) {
           const firstPage = getPageById(ids[0])
           if (firstPage && firstPage.windowId) {
-            clearSelection(firstPage.windowId)
+            if (typeof clearSelection === 'function') {
+              clearSelection(firstPage.windowId)
+            } else if (reduxStore) {
+              reduxStore.dispatch({ actionType: "PAGE_SELECTION_CLEAR", windowId: firstPage.windowId })
+            }
           }
         }
 
-        // 2. Apply new selection individually
-        ids.forEach((id) => {
+        // 2. Apply new selection individually.
+        ids.forEach((id, index) => {
           const page = getPageById(id)
           if (page) {
-            // multiSelect: false to avoid range (Shift) selection
-            // addGroup: true to add to the selection group (Ctrl behavior)
-            setSelection(page, { multiSelect: false, addGroup: true })
+            if (setSelection) {
+              setSelection(page, { multiSelect: false, addGroup: index > 0 })
+            } else if (reduxStore) {
+              reduxStore.dispatch({
+                actionType: "PAGE_SELECTION_SET",
+                page: page,
+                multiSelect: false,
+                addGroup: index > 0,
+                excludeActive: false
+              })
+            }
           }
         })
         return true
@@ -436,17 +453,25 @@ function getVivaldiMainView() {
     },
 
     onWorkspacesChanged(listener) {
-      // 1. Try WorkspaceStore listener (Immediate updates)
-      const store = getWorkspaceStore()
-      if (store && typeof store.addListener === 'function') {
-        const wrapped = () => {
-          listener(store.getWorkspaces())
+        // 1. Try WorkspaceStore listener (Immediate updates)
+        const store = getWorkspaceStore()
+        if (store) {
+          const wrapped = () => {
+            listener(store.getWorkspaces())
+          }
+          if (typeof store.addListener === 'function') {
+            store.addListener(wrapped)
+            return () => store.removeListener(wrapped)
+          } else if (typeof store.addChangeListener === 'function') {
+            store.addChangeListener(wrapped)
+            return () => store.removeChangeListener(wrapped)
+          } else if (typeof store.subscribe === 'function') {
+            const unsubscribe = store.subscribe(wrapped)
+            return () => unsubscribe && unsubscribe()
+          }
         }
-        store.addListener(wrapped)
-        return () => store.removeListener(wrapped)
-      }
-
-      // 2. Fallback to Prefs listener
+  
+        // 2. Fallback to Prefs listener
       const prefsApi = getPrefsApi()
       if (!prefsApi || typeof prefsApi.onChanged === 'undefined') return () => {}
 

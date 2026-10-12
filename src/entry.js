@@ -10,6 +10,8 @@ const { createLayoutAdapter } = require('./adapters/layout.js')
 const { createSidebarRenderer } = require('./ui/render.js')
 const { settingsStore } = require('./store/settings-store.js')
 
+const { createActivationTrace, installTraceDownload } = require('./diagnostics/activation-trace.js')
+
 const APP_ID = 'svb-root'
 
 function createTabLookupCache() {
@@ -78,50 +80,11 @@ async function main() {
     dragShield: mount.dragShield,
     panelStore,
   })
-  const api = createTabsApi()
+  const activationTrace = createActivationTrace(createTabsApi())
+  const api = activationTrace.api
   const store = createTabStore(api)
   const selectionStore = createSelectionStore()
   const dragStore = createDragStore()
-  function writeClipboard(text) {
-    if (!text) return
-    try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        void navigator.clipboard.writeText(text)
-        return
-      }
-    } catch (error) {}
-    try {
-      const textarea = document.createElement('textarea')
-      textarea.value = text
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-    } catch (error) {}
-  }
-
-  function copyTabsToClipboard(action, tabId, selectedIds) {
-    if (!latestTabState) return
-    const ids = Array.isArray(selectedIds) && selectedIds.includes(tabId) && selectedIds.length > 1
-      ? selectedIds
-      : [tabId]
-    const byId = new Map(latestTabState.pinnedTabs.concat(latestTabState.tabs).map(tab => [tab.id, tab]))
-    const lines = ids
-      .map(id => byId.get(id))
-      .filter(Boolean)
-      .map(tab => {
-        const url = tab.url || ''
-        const title = tab.title || url
-        if (action === 'copy-url') return url
-        if (action === 'copy-title') return title
-        return `[${title}](${url})`
-      })
-      .filter(Boolean)
-    if (lines.length) writeClipboard(lines.join('\n'))
-  }
-
   const renderer = createSidebarRenderer({
     root: mount.root,
     dragShield: mount.dragShield,
@@ -131,6 +94,7 @@ async function main() {
     },
     onCloseTab: id => store.closeTab(id),
     onCreateTab: () => store.createTab(),
+    onCreateFolderTab: () => store.createFolderTab(),
     onCreateChildTab: id => store.createChildTab(id),
     onRenameTab: (id, title) => { void store.renameTab(id, title) },
     onTogglePinned: () => panelStore.togglePinned(),
@@ -147,6 +111,9 @@ async function main() {
       const selectedIds = latestSelectionState.selectedIds || []
       if (!selectedIds.includes(id)) {
         selectionStore.selectSingle(id)
+      }
+      if (store.refreshWorkspaces) {
+        return store.refreshWorkspaces()
       }
     },
     onContextMenuAction: (action, payload) => {
@@ -165,6 +132,16 @@ async function main() {
         store.createChildTab(tabId)
       } else if (action === 'new-sibling') {
         store.createSiblingTab(tabId)
+      } else if (action === 'new-folder-child') {
+        store.createFolderTabAt(tabId, 'inside')
+      } else if (action === 'new-folder-sibling') {
+        store.createFolderTabAt(tabId, 'after')
+      } else if (action === 'new-folder-above') {
+        store.createFolderTabAt(tabId, 'before')
+      } else if (action === 'move-top') {
+        void store.moveSelectionToTop(tabId, selectedIds)
+      } else if (action === 'move-bottom') {
+        void store.moveSelectionToBottom(tabId, selectedIds)
       } else if (action === 'move-window') {
         void store.moveSelectionToNewWindow(tabId, selectedIds)
       } else if (action === 'move-workspace') {
@@ -175,18 +152,22 @@ async function main() {
         void store.togglePinnedForSelection(tabId, selectedIds)
       } else if (action === 'toggle-mute') {
         void store.toggleMutedForSelection(tabId, selectedIds)
+      } else if (action === 'hibernate') {
+        void store.hibernateSelection(tabId, selectedIds)
+      } else if (action === 'reload') {
+        void store.reloadSelection(tabId, selectedIds)
+      } else if (action === 'bookmark-tab') {
+        void store.bookmarkSelection(tabId, selectedIds)
+      } else if (action === 'copy-url') {
+        void store.copySelectionUrl(tabId, selectedIds)
+      } else if (action === 'copy-title') {
+        void store.copySelectionTitle(tabId, selectedIds)
+      } else if (action === 'copy-markdown') {
+        void store.copySelectionMarkdown(tabId, selectedIds)
       } else if (action === 'set-color') {
         void store.setColorForSelection(tabId, selectedIds, payload.colorKey)
       } else if (action === 'duplicate') {
         void store.duplicateTab(tabId)
-      } else if (action === 'reload') {
-        store.reloadSelection(tabId, selectedIds)
-      } else if (action === 'hibernate') {
-        void store.hibernateSelection(tabId, selectedIds)
-      } else if (action === 'copy-url' || action === 'copy-title' || action === 'copy-markdown') {
-        copyTabsToClipboard(action, tabId, selectedIds)
-      } else if (action === 'bookmark-tab') {
-        void store.bookmarkTab(tabId)
       } else if (action === 'save-tree-bookmark') {
         void store.saveTreeAsBookmark(tabId)
       } else if (action === 'open-saved-tree') {
@@ -284,7 +265,13 @@ async function main() {
   let previousVisibleActiveTabId = null
   const getTabLookup = createTabLookupCache()
   const entryEventController = new AbortController()
-  const unsubscribers = []
+  const traceContext = () => ({
+    activeTabId: latestTabState && latestTabState.activeTabId,
+    direction: settingsStore.get('activateAfterClose'),
+    adaptive: settingsStore.get('adaptiveActivation'),
+    tree: latestTabState ? latestTabState.treeTabs.map(item => ({ id: item.id, parentId: item.parentId })) : [],
+  })
+  const unsubscribers = [installTraceDownload(activationTrace, mount.root, traceContext)]
 
   function syncView() {
     if (!latestTabState) return
@@ -303,6 +290,7 @@ async function main() {
 
   unsubscribers.push(store.subscribe(state => {
     latestTabState = state
+    activationTrace.record('store.snapshot', traceContext())
     const { visibleIds, treeItemsById } = getTabLookup(state)
     const activeRegularVisible = Number.isFinite(state.activeTabId) && treeItemsById.has(state.activeTabId)
     const activeTabChanged = state.activeTabId !== previousVisibleActiveTabId
@@ -313,7 +301,7 @@ async function main() {
       && latestSelectionState.selectedIds.length <= 1
       && latestSelectionState.selectedIds[0] !== state.activeTabId
     ) {
-      selectionStore.selectSingle(state.activeTabId)
+      selectionStore.selectSingle(state.activeTabId, { source: 'browser' })
     } else {
       selectionStore.retainValid(visibleIds)
     }
@@ -327,9 +315,11 @@ async function main() {
     syncView()
   }))
 
-  unsubscribers.push(selectionStore.subscribe(state => {
+  unsubscribers.push(selectionStore.subscribe((state, source) => {
     latestSelectionState = state
-    if (state.selectedIds && state.selectedIds.length > 1) {
+    // Browser events only update our display. Replaying them into Vivaldi's
+    // index-based highlight API can activate a different tab during removal.
+    if (source !== 'browser' && state.selectedIds && state.selectedIds.length > 0) {
       api.syncNativeSelection(state.selectedIds)
     }
     syncView()
@@ -337,6 +327,10 @@ async function main() {
 
   unsubscribers.push(dragStore.subscribe(state => {
     latestDragState = state
+    syncView()
+  }))
+
+  unsubscribers.push(settingsStore.subscribe(() => {
     syncView()
   }))
 
@@ -351,6 +345,8 @@ async function main() {
       }
     }
     if (typeof renderer.dispose === 'function') renderer.dispose()
+    if (typeof layout.dispose === 'function') layout.dispose()
+    if (typeof theme.dispose === 'function') theme.dispose()
     if (typeof store.dispose === 'function') store.dispose()
   }
   await store.init()

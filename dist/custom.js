@@ -88,7 +88,7 @@ const STYLE_TEXT = `
   transform: translateX(0) !important;
 }
 
-.svb-layout-host.svb-position-right #svb-root-trigger.svb-edge-trigger {
+#svb-root-trigger.svb-edge-trigger.svb-position-right {
   left: auto !important;
   right: 0 !important;
 }
@@ -99,27 +99,15 @@ const STYLE_TEXT = `
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header {
-  grid-template-columns: auto 1fr;
+  flex-direction: row-reverse;
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header__left {
-  grid-column: 2;
-  justify-self: end;
   flex-direction: row-reverse;
 }
 
 .svb-layout-host.svb-position-right #svb-root .svb-header__actions {
-  grid-column: 1;
   flex-direction: row-reverse;
-}
-
-.svb-layout-host.svb-position-right #svb-root .svb-header__count {
-  margin: 0 0 0 8px;
-}
-
-.svb-layout-host.svb-position-right #svb-root-drag-shield.svb-drag-shield.is-menu-backdrop {
-  left: 0 !important;
-  right: var(--svb-sidebar-width, 300px) !important;
 }
 
 .svb-layout-host.svb-position-right #svb-root.svb-shell:not(.is-unified) .svb-frame {
@@ -169,7 +157,7 @@ const STYLE_TEXT = `
   --svb-guide-opacity: 0.35;
   --svb-d-swift: 100ms;
   --svb-d-fast: 120ms;
-  --svb-d-norm: 200ms;
+  --svb-d-norm: 180ms;
   --svb-ease: cubic-bezier(0.2, 0, 0, 1);
   --svb-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   position: absolute !important;
@@ -186,6 +174,8 @@ const STYLE_TEXT = `
   transform: translateX(-100%) !important;
   transition:
     transform var(--svb-d-norm) var(--svb-ease-out),
+    width var(--svb-d-norm) var(--svb-ease-out),
+    box-shadow var(--svb-d-norm) var(--svb-ease-out),
     opacity var(--svb-d-fast) linear;
 }
 
@@ -201,7 +191,9 @@ const STYLE_TEXT = `
   border-bottom: 0;
 }
 
-#svb-root.svb-shell.is-menu-open {
+#svb-root.svb-shell.is-menu-open,
+#svb-root.svb-shell.svb-autohide-icons.is-menu-open,
+#svb-root.svb-shell.svb-autohide-icons.is-revealed.is-menu-open {
   z-index: 1000001 !important;
 }
 
@@ -216,19 +208,44 @@ body.svb-is-resizing {
   transform: translateX(0) !important;
 }
 
-.svb-layout-host.svb-mode-overlay #svb-root.svb-shell .svb-frame {
+/* Icon strip auto-hide mode */
+#svb-root.svb-shell.svb-autohide-icons {
+  opacity: 1 !important;
+  transform: translateX(0) !important;
+  z-index: 20 !important;
+}
+
+.svb-layout-host.svb-position-right #svb-root.svb-shell.svb-autohide-icons {
+  transform: translateX(0) !important;
+}
+
+#svb-root.svb-shell.svb-autohide-icons.is-revealed {
+  z-index: 1000 !important;
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.42), 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.svb-layout-host.svb-position-right #svb-root.svb-shell.svb-autohide-icons.is-revealed {
+  box-shadow: -4px 0 24px rgba(0, 0, 0, 0.42), 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-resize-handle {
+  display: none !important;
+}
+
+.svb-layout-host.svb-mode-overlay #svb-root.svb-shell .svb-frame,
+#svb-root.svb-shell.svb-autohide-icons.is-revealed .svb-frame {
   background-color: var(--colorBg, var(--svb-bg)) !important;
   backdrop-filter: none !important;
   background-image: none !important;
 }
 
 #svb-root-trigger.svb-edge-trigger {
-  position: absolute !important;
+  position: fixed !important;
   top: 0 !important;
   left: 0 !important;
   bottom: 0 !important;
-  width: 12px;
-  z-index: 10;
+  width: 4px;
+  z-index: 999999;
   display: none;
   pointer-events: auto;
 }
@@ -253,7 +270,12 @@ body.svb-is-resizing {
 #svb-root-drag-shield.svb-drag-shield.is-menu-backdrop {
   display: block;
   cursor: default;
-  left: var(--svb-sidebar-width, 300px);
+  inset: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  top: 0 !important;
+  bottom: 0 !important;
+  z-index: 999999 !important;
 }
 
 #svb-root .svb-frame {
@@ -413,34 +435,124 @@ body.svb-is-resizing {
 }
 
 #svb-root .svb-header {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 0 8px;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
   padding: 6px;
+  box-sizing: border-box;
   border-bottom: 0;
+  transition: padding var(--svb-d-norm) var(--svb-ease-out);
 }
 
-#svb-root .svb-header__count {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
-  justify-self: end;
-  min-width: 16px;
-  padding: 0 4px;
-  border-radius: 99px;
-  font-size: 10px;
-  line-height: 16px;
-  color: var(--svb-text-muted);
-  background: color-mix(in srgb, var(--svb-text) 8%, transparent);
+#svb-root .svb-header__left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: gap var(--svb-d-norm) var(--svb-ease-out);
+}
+
+#svb-root .svb-header__left .svb-icon-button {
+  width: 28px;
+  max-width: 28px;
+  min-width: 28px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity var(--svb-d-fast) ease 40ms,
+    max-width var(--svb-d-norm) var(--svb-ease-out),
+    min-width var(--svb-d-norm) var(--svb-ease-out),
+    width var(--svb-d-norm) var(--svb-ease-out);
 }
 
 #svb-root .svb-header__actions {
-  grid-row: 1;
-  grid-column: 3;
   display: flex;
   gap: 2px;
   align-items: center;
+  max-width: 60px;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity var(--svb-d-fast) ease 40ms,
+    max-width var(--svb-d-norm) var(--svb-ease-out),
+    gap var(--svb-d-norm) var(--svb-ease-out);
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-header {
+  height: 40px;
+  min-height: 40px;
+  max-height: 40px;
+  padding: 6px 2px;
+  justify-content: center;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-header__left {
+  justify-content: center;
+  width: 100%;
+  gap: 0 !important;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-header__left .svb-icon-button {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  transition:
+    opacity var(--svb-d-swift) ease 0ms,
+    max-width var(--svb-d-swift) var(--svb-ease-out) 0ms,
+    min-width var(--svb-d-swift) var(--svb-ease-out) 0ms,
+    width var(--svb-d-swift) var(--svb-ease-out) 0ms;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-header__actions {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  width: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+  gap: 0 !important;
+  transition:
+    opacity var(--svb-d-swift) ease 0ms,
+    max-width var(--svb-d-swift) var(--svb-ease-out) 0ms,
+    width var(--svb-d-swift) var(--svb-ease-out) 0ms;
+}
+
+#svb-root .svb-header__count {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 20px;
+  text-align: center;
+  color: var(--svb-text-muted);
+  background: color-mix(in srgb, var(--svb-text) 8%, transparent);
+  box-sizing: border-box;
+  transition:
+    color var(--svb-d-norm) ease,
+    background var(--svb-d-norm) ease,
+    transform var(--svb-d-norm) var(--svb-ease-out);
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-header__count {
+  margin: 0 auto !important;
+  color: var(--svb-text-strong);
+  background: color-mix(in srgb, var(--svb-text) 14%, transparent);
 }
 
 #svb-root .svb-icon-button {
@@ -504,18 +616,16 @@ body.svb-is-resizing {
   padding-bottom: 2px;
 }
 
-#svb-root .svb-section__label {
-  margin: 0 6px 4px;
-  font-size: 10px;
-  color: var(--svb-text-muted);
-  text-transform: uppercase;
+#svb-root .svb-section--pinned {
+  margin-bottom: 6px;
 }
 
 #svb-root .svb-pinned-grid {
   display: flex;
   flex-wrap: wrap;
   gap: var(--svb-gap);
-  padding: 0 2px 11px;
+  /* Align compact favicons with regular tabs without changing wrap width. */
+  padding: 4px 0 8px 4px;
   position: relative;
 }
 
@@ -524,21 +634,32 @@ body.svb-is-resizing {
   position: absolute;
   left: 8px;
   right: 8px;
-  bottom: 4px;
+  bottom: 0;
   height: 1px;
   opacity: 0.22;
   background-image: linear-gradient(90deg, transparent, color-mix(in srgb, var(--svb-text) 70%, transparent) 10%, color-mix(in srgb, var(--svb-text) 70%, transparent) 90%, transparent);
 }
 
 #svb-root .svb-tab-list {
-  display: flex;
+  display: block;
   min-height: 0;
   flex: 1;
-  flex-direction: column;
-  gap: 0;
-  overflow: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 0;
   padding-bottom: 2px;
+}
+
+#svb-root .svb-pinned-folder-group {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: var(--svb-bg);
+  border-bottom: 1px solid color-mix(in srgb, var(--svb-text) 15%, transparent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border-bottom-left-radius: var(--svb-radius, 4px);
+  border-bottom-right-radius: var(--svb-radius, 4px);
+  margin-bottom: 6px;
 }
 
 #svb-root .svb-tab {
@@ -572,6 +693,14 @@ body.svb-is-resizing {
   display: block;
   width: calc(100% - (var(--svb-depth) * var(--svb-tree-indent)));
   margin-left: calc(var(--svb-depth) * var(--svb-tree-indent));
+  transition:
+    margin-left var(--svb-d-norm) var(--svb-ease-out),
+    width var(--svb-d-norm) var(--svb-ease-out);
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-tab__outer {
+  margin-left: 0 !important;
+  width: 100% !important;
 }
 
 #svb-root .svb-tab__guides {
@@ -579,6 +708,12 @@ body.svb-is-resizing {
   inset: 0;
   pointer-events: none;
   z-index: 0;
+  transition: opacity var(--svb-d-fast) ease;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-tab__guides {
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 #svb-root .svb-tab__guide {
@@ -600,12 +735,14 @@ body.svb-is-resizing {
   align-items: center;
   gap: 5px;
   min-height: 30px;
-  padding: 0 6px 0 7px;
+  padding: 0 6px 0 8px;
   border: 1px solid transparent;
   border-radius: var(--svb-radius);
   background: var(--svb-panel);
   box-shadow: 0 1px 1px 0 rgba(0, 0, 0, 0.12);
   z-index: 1;
+  overflow: hidden;
+  transition: background var(--svb-d-fast) ease;
 }
 
 #svb-root.is-transparent-tabs .svb-tab:not(.is-active):not(.is-selected) .svb-tab__body {
@@ -724,6 +861,12 @@ body.svb-is-resizing {
   min-width: 30px;
   flex: 0 0 30px;
   padding: 0;
+  translate: 0 0;
+  opacity: 1;
+  transition:
+    translate var(--svb-d-norm) var(--svb-ease-out),
+    opacity var(--svb-d-fast) ease,
+    background-color var(--svb-d-fast) ease;
 }
 
 #svb-root .svb-tab__lead {
@@ -742,6 +885,46 @@ body.svb-is-resizing {
   width: 16px;
   height: 16px;
   border-radius: 3px;
+}
+
+#svb-root .svb-tab__favicon.is-folder {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+#svb-root .svb-tab__favicon.is-folder svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+}
+
+#svb-root .svb-tab__pinned-badge {
+  position: absolute;
+  top: -3px;
+  left: -4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--svb-bg, #232629);
+  color: var(--svb-accent, #47cfff);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.45);
+  z-index: 2;
+  pointer-events: none;
+}
+
+#svb-root .svb-tab__pinned-badge .svb-small-pin-icon {
+  width: 8px;
+  height: 8px;
+  display: block;
 }
 
 #svb-root .svb-tab__spinner {
@@ -801,6 +984,12 @@ body.svb-is-resizing {
   transform: rotate(-90deg);
 }
 
+#svb-root .svb-tab.is-folder .svb-tab__exp-icon {
+  display: none !important;
+}
+
+
+
 #svb-root .svb-tab.is-active .svb-tab__exp-icon,
 #svb-root .svb-tab__lead:hover .svb-tab__exp-icon {
   color: var(--svb-text-strong);
@@ -816,8 +1005,8 @@ body.svb-is-resizing {
   opacity: 1;
 }
 
-#svb-root .svb-tab[data-parent="true"] .svb-tab__lead:hover .svb-tab__favicon,
-#svb-root .svb-tab[data-parent="true"][data-folded="true"] .svb-tab__favicon {
+#svb-root .svb-tab:not(.is-folder)[data-parent="true"] .svb-tab__lead:hover .svb-tab__favicon,
+#svb-root .svb-tab:not(.is-folder)[data-parent="true"][data-folded="true"] .svb-tab__favicon {
   opacity: 0.2;
 }
 
@@ -847,6 +1036,69 @@ body.svb-is-resizing {
   min-width: 0;
   flex: 1;
   padding-right: 0;
+  transition: opacity var(--svb-d-fast) ease;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-tab__content {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-tab__close,
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-tab__add {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+#svb-root.svb-shell.svb-autohide-icons .svb-frame {
+  box-sizing: border-box;
+}
+
+/* Keep the expanded wrapping and row heights throughout the width animation. */
+#svb-root.svb-shell.svb-autohide-icons .svb-section--pinned {
+  box-sizing: border-box;
+  width: calc(var(--svb-rendered-width, 300px) - 1px);
+  flex-shrink: 0;
+}
+
+#svb-root.svb-shell.svb-autohide-icons.is-unified .svb-section--pinned {
+  width: calc(var(--svb-rendered-width, 300px) - 2px);
+}
+
+#svb-root.svb-shell.svb-autohide-icons .svb-pinned-tab {
+  transition:
+    translate var(--svb-d-norm) var(--svb-ease-out),
+    opacity var(--svb-d-fast) ease,
+    visibility 0s linear 0s,
+    background-color var(--svb-d-fast) ease;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-pinned-tab {
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  transition:
+    translate var(--svb-d-norm) var(--svb-ease-out),
+    opacity var(--svb-d-fast) ease,
+    visibility 0s linear var(--svb-d-fast);
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-pinned-tab[data-strip-visible="true"] {
+  opacity: 1;
+  pointer-events: auto;
+  visibility: visible;
+  translate: var(--svb-strip-offset, 0px) 0;
+  transition:
+    translate var(--svb-d-norm) var(--svb-ease-out),
+    opacity var(--svb-d-fast) ease,
+    visibility 0s linear 0s;
+}
+
+#svb-root .svb-tab__close,
+#svb-root .svb-tab__add,
+#svb-root .svb-tab__exp,
+#svb-root .svb-tab__child-count {
+  transition: opacity var(--svb-d-fast) ease;
 }
 
 #svb-root .svb-tab.has-add.is-active .svb-tab__content,
@@ -999,18 +1251,48 @@ body.svb-is-resizing {
   display: block;
 }
 
-#svb-root .svb-frame.has-scroll .svb-new-tab-button.is-inline {
+#svb-root .svb-frame.is-top-mode .svb-footer {
+  display: none !important;
+}
+
+#svb-root .svb-frame.has-scroll:not(.is-top-mode) .svb-new-tab-button.is-inline,
+#svb-root .svb-frame.has-scroll:not(.is-top-mode) .svb-new-item-buttons.is-inline {
   display: none;
 }
 
-#svb-root .svb-new-tab-button {
+#svb-root .svb-frame.is-top-mode.has-scroll .svb-new-item-buttons.is-inline.is-top {
+  display: flex !important;
+}
+
+#svb-root .svb-new-item-buttons {
+  display: flex;
+  gap: 4px;
+  margin: 0 2px 2px;
+  transition: gap var(--svb-d-norm) var(--svb-ease-out);
+}
+
+#svb-root .svb-new-item-buttons.is-inline {
+  margin: 4px 2px 2px;
+}
+
+#svb-root .svb-new-item-buttons.is-inline.is-top {
+  position: sticky;
+  top: 0;
+  z-index: 9;
+  background-color: var(--svb-bg);
+  padding-top: 2px;
+  padding-bottom: 2px;
+  margin: 0 2px 4px;
+}
+
+#svb-root .svb-new-tab-button,
+#svb-root .svb-new-folder-button {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
-  width: calc(100% - 4px);
   min-height: 30px;
-  margin: 0 2px 2px;
-  padding: 0 10px;
+  padding: 0 6px 0 8px;
   border: 1px solid transparent;
   border-radius: var(--svb-radius);
   color: var(--svb-text-strong);
@@ -1018,9 +1300,30 @@ body.svb-is-resizing {
   box-shadow: none;
   cursor: pointer;
   text-align: left;
+  overflow: hidden;
 }
 
-#svb-root .svb-new-tab-button:hover {
+#svb-root .svb-new-tab-button {
+  flex: 1;
+}
+
+#svb-root .svb-new-folder-button {
+  flex: 0 0 32px;
+  max-width: 32px;
+  min-width: 32px;
+  padding: 0;
+  justify-content: center;
+  opacity: 1;
+  overflow: hidden;
+  transition:
+    opacity var(--svb-d-fast) ease 40ms,
+    max-width var(--svb-d-norm) var(--svb-ease-out),
+    min-width var(--svb-d-norm) var(--svb-ease-out),
+    flex var(--svb-d-norm) var(--svb-ease-out);
+}
+
+#svb-root .svb-new-tab-button:hover,
+#svb-root .svb-new-folder-button:hover {
   background: var(--svb-panel-hover);
 }
 
@@ -1030,6 +1333,7 @@ body.svb-is-resizing {
   justify-content: center;
   width: 16px;
   height: 16px;
+  flex: 0 0 16px;
   font-size: 15px;
   line-height: 1;
 }
@@ -1042,10 +1346,44 @@ body.svb-is-resizing {
   font-weight: 500;
   white-space: nowrap;
   text-overflow: ellipsis;
+  opacity: 1;
+  transition: opacity var(--svb-d-fast) ease 40ms;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-new-item-buttons {
+  gap: 0 !important;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-new-tab-button__label {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  transition: opacity var(--svb-d-swift) ease 0ms;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-new-folder-button {
+  opacity: 0 !important;
+  pointer-events: none !important;
+  max-width: 0 !important;
+  min-width: 0 !important;
+  flex: 0 0 0px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border-width: 0 !important;
+  overflow: hidden !important;
+  transition:
+    opacity var(--svb-d-swift) ease 0ms,
+    max-width var(--svb-d-swift) var(--svb-ease-out) 0ms,
+    min-width var(--svb-d-swift) var(--svb-ease-out) 0ms,
+    flex var(--svb-d-swift) var(--svb-ease-out) 0ms;
 }
 
 #svb-root .svb-tab-list::-webkit-scrollbar {
   width: 6px;
+}
+
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-tab-list::-webkit-scrollbar {
+  width: 0px !important;
+  display: none !important;
 }
 
 #svb-root .svb-tab-list::-webkit-scrollbar-thumb {
@@ -1055,6 +1393,13 @@ body.svb-is-resizing {
 
 #svb-root .svb-tab-list::-webkit-scrollbar-track {
   background: transparent;
+}
+
+#svb-root .svb-menu-host {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483647;
 }
 
 #svb-root .svb-menu {
@@ -1272,7 +1617,7 @@ body.svb-is-resizing {
 }
 
 #svb-root .svb-settings-header {
-  padding: 12px;
+  padding: 8px 10px;
   border-bottom: 1px solid var(--svb-border);
 }
 
@@ -1280,41 +1625,42 @@ body.svb-is-resizing {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 6px 0;
+  padding: 2px 0;
   border: 0;
   background: transparent;
   color: var(--svb-accent);
   cursor: pointer;
   font: inherit;
+  font-size: 12px;
   font-weight: 500;
 }
 
 #svb-root .svb-settings-back .svb-menu__icon {
   transform: rotate(180deg);
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 #svb-root .svb-settings-title {
-  margin: 12px 0 0;
-  font-size: 18px;
+  margin: 6px 0 0;
+  font-size: 15px;
   font-weight: 600;
   color: var(--svb-text-strong);
 }
 
 #svb-root .svb-settings-content {
-  padding: 16px 12px;
+  padding: 8px 10px;
   overflow: auto;
 }
 
 #svb-root .svb-settings-group {
-  margin-bottom: 24px;
+  margin-bottom: 12px;
 }
 
 #svb-root .svb-settings-label {
   display: block;
-  margin-bottom: 10px;
-  font-size: 13px;
+  margin-bottom: 4px;
+  font-size: 12px;
   font-weight: 600;
   color: var(--svb-text-strong);
 }
@@ -1322,14 +1668,15 @@ body.svb-is-resizing {
 #svb-root .svb-settings-options {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 3px;
 }
 
 #svb-root .svb-settings-option {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
+  gap: 8px;
+  padding: 4px 8px;
+  min-height: 26px;
   border: 1px solid var(--svb-border);
   border-radius: var(--svb-radius);
   background: var(--svb-panel);
@@ -1347,7 +1694,7 @@ body.svb-is-resizing {
 }
 
 #svb-root .svb-settings-option span {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--svb-text);
 }
 
@@ -1358,10 +1705,43 @@ body.svb-is-resizing {
   padding: 0 6px 6px;
 }
 
+#svb-root.svb-shell.svb-autohide-icons:not(.is-revealed) .svb-workspaces {
+  display: none !important;
+}
+
+#svb-root .svb-workspaces__row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
 #svb-root .svb-workspaces__icons {
   display: flex;
-  flex-wrap: wrap;
+  flex: 1 1 auto;
   gap: 4px;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  --svb-ws-fade-start: 0px;
+  --svb-ws-fade-end: 0px;
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--svb-ws-fade-start), #000 calc(100% - var(--svb-ws-fade-end)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--svb-ws-fade-start), #000 calc(100% - var(--svb-ws-fade-end)), transparent 100%);
+}
+
+#svb-root .svb-workspaces__icons::-webkit-scrollbar {
+  display: none;
+}
+
+#svb-root .svb-workspaces__icons.has-overflow-start {
+  --svb-ws-fade-start: 18px;
+}
+
+#svb-root .svb-workspaces__icons.has-overflow-end {
+  --svb-ws-fade-end: 18px;
 }
 
 #svb-root .svb-workspace {
@@ -1491,7 +1871,7 @@ function mountRoot(id) {
     trigger = document.createElement('div')
     trigger.id = `${id}-trigger`
     trigger.className = 'svb-edge-trigger'
-    host.prepend(trigger)
+    document.body.appendChild(trigger)
   }
 
   let dragShield = document.getElementById(`${id}-drag-shield`)
@@ -1516,6 +1896,9 @@ const DEFAULT_SETTINGS = {
   adaptiveActivation: true,
   doubleClickAction: 'rename',
   panelPosition: 'left',
+  autoCloseTabsDays: 0,
+  newTabPlacement: 'bottom',
+  autoHideMode: 'full',
 }
 
 function createSettingsStore() {
@@ -1630,7 +2013,7 @@ function createSettingsStore() {
 // Global instance
 const settingsStore = createSettingsStore()
 
-module.exports = { settingsStore }
+module.exports = { settingsStore, createSettingsStore, DEFAULT_SETTINGS }
 
     },
     "store/tree-store.js": function(require, module, exports) {
@@ -2040,6 +2423,42 @@ function createTreeStore() {
       return dirty
     },
 
+    replaceTabId(oldId, newId) {
+      const normalizedOld = normalizeTabId(oldId)
+      const normalizedNew = normalizeTabId(newId)
+      if (normalizedOld == null || normalizedNew == null || normalizedOld === normalizedNew) return false
+
+      const node = getNode(normalizedOld)
+      if (!node) return false
+
+      state.nodesById[normalizedNew] = node
+      delete state.nodesById[normalizedOld]
+
+      if (node.parentId != null) {
+        const parent = getNode(node.parentId)
+        if (parent) {
+          const index = parent.childIds.indexOf(normalizedOld)
+          if (index !== -1) {
+            parent.childIds[index] = normalizedNew
+          }
+        }
+      } else {
+        const index = state.rootIds.indexOf(normalizedOld)
+        if (index !== -1) {
+          state.rootIds[index] = normalizedNew
+        }
+      }
+
+      for (const childId of node.childIds) {
+        const child = getNode(childId)
+        if (child && child.parentId === normalizedOld) {
+          child.parentId = normalizedNew
+        }
+      }
+
+      return true
+    },
+
     repair(validTabIds) {
       const validSet = new Set(normalizeUniqueIds(validTabIds))
       let dirty = false
@@ -2121,11 +2540,43 @@ module.exports = { createTreeStore }
 const TREE_NAMESPACE_KEY = 'svbTree'
 const TREE_VERSION = 1
 
+const BACKUP_KEY = 'svbTreeBackup'
+
+function readBackup() {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const raw = window.localStorage.getItem(BACKUP_KEY)
+      if (raw) return JSON.parse(raw)
+    }
+  } catch (e) {
+    console.warn('Failed to read svbTreeBackup', e)
+  }
+  return {}
+}
+
+function writeBackup(backupObj) {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      window.localStorage.setItem(BACKUP_KEY, JSON.stringify(backupObj))
+    }
+  } catch (e) {
+    console.warn('Failed to write svbTreeBackup', e)
+  }
+}
+
 const treeMetadataCache = new Map()
 
 function updateMetadataCache(tabId, record) {
   if (!record || !record.nodeId) return
   treeMetadataCache.set(tabId, { ...record })
+}
+
+function migrateMetadataCache(removedTabId, addedTabId) {
+  const entry = treeMetadataCache.get(removedTabId)
+  if (entry) {
+    treeMetadataCache.set(addedTabId, entry)
+    treeMetadataCache.delete(removedTabId)
+  }
 }
 
 function getCachedMetadata(tabId) {
@@ -2181,7 +2632,7 @@ function normalizeOrder(value) {
   return Number.isFinite(order) ? order : 0
 }
 
-function getTreeRecord(tab) {
+function getTreeRecord(tab, contextKey) {
   const vivExtData = tab && tab.vivExtData && typeof tab.vivExtData === 'object'
     ? tab.vivExtData
     : null
@@ -2190,10 +2641,19 @@ function getTreeRecord(tab) {
     : null
 
   if (!record || typeof record.nodeId !== 'string' || !record.nodeId) {
-    // If the tab is hibernated and we have no record, try the session cache
-    if (tab && tab.discarded) {
+    // If we have no record, try the session cache or backup as a fallback.
+    // This handles cases where Vivaldi loses vivExtData during long hibernation
+    // or tab wake-up.
+    if (tab && tab.id) {
       const cached = getCachedMetadata(tab.id)
       if (cached) return cached
+
+      const backup = readBackup()
+      if (backup[tab.id]) {
+        const restored = backup[tab.id]
+        restored.pendingRestore = true
+        return restored
+      }
     }
     return null
   }
@@ -2205,6 +2665,7 @@ function getTreeRecord(tab) {
     parentNodeId: typeof record.parentNodeId === 'string' && record.parentNodeId ? record.parentNodeId : null,
     collapsed: !!record.collapsed,
     order: normalizeOrder(record.order),
+    createdAt: Number(record.createdAt) || Date.now(),
   }
 
   // Update cache with the latest valid data
@@ -2249,7 +2710,7 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
   const tabIdByNodeId = new Map()
 
   for (const tab of tabsById.values()) {
-    const record = getTreeRecord(tab)
+    const record = getTreeRecord(tab, contextKey)
     const nodeId = getCachedNodeId(tab.id, record && record.nodeId)
     if (!tabIdByNodeId.has(nodeId)) {
       nodeIdByTabId.set(tab.id, nodeId)
@@ -2265,6 +2726,7 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
   const payloads = []
 
   for (const tab of tabsById.values()) {
+    const currentRecord = getTreeRecord(tab, contextKey)
     const node = safeTreeState.nodesById[tab.id] || { parentId: null, collapsed: false }
     const nextRecord = {
       version: TREE_VERSION,
@@ -2273,15 +2735,20 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
       parentNodeId: node.parentId != null ? (nodeIdByTabId.get(node.parentId) || null) : null,
       collapsed: !!node.collapsed,
       order: ordersByTabId.get(tab.id) || 0,
+      createdAt: currentRecord ? currentRecord.createdAt : Date.now(),
     }
 
-    const currentRecord = getTreeRecord(tab)
-    const changed = !currentRecord
+    let changed = !currentRecord
       || currentRecord.contextKey !== nextRecord.contextKey
       || currentRecord.nodeId !== nextRecord.nodeId
       || currentRecord.parentNodeId !== nextRecord.parentNodeId
       || currentRecord.collapsed !== nextRecord.collapsed
       || currentRecord.order !== nextRecord.order
+      || currentRecord.createdAt !== nextRecord.createdAt
+
+    if (currentRecord && currentRecord.pendingRestore && tab.discarded) {
+      changed = false
+    }
 
     const nextVivExtData = cloneVivExtData(tab.vivExtData)
     nextVivExtData[TREE_NAMESPACE_KEY] = nextRecord
@@ -2297,6 +2764,15 @@ function buildVivExtDataPayloads(contextKey, treeState, tabs) {
       vivExtData: nextVivExtData,
     })
   }
+
+  // Update LocalStorage Backup with the new tree state
+  const backup = readBackup()
+  for (const payload of payloads) {
+    if (payload.vivExtData && payload.vivExtData[TREE_NAMESPACE_KEY]) {
+      backup[payload.tabId] = payload.vivExtData[TREE_NAMESPACE_KEY]
+    }
+  }
+  writeBackup(backup)
 
   return payloads
 }
@@ -2324,7 +2800,7 @@ function restoreFromVivExtData(contextKey, tabs) {
   const tabIdByNodeId = new Map()
 
   for (const tab of contextualTabs) {
-    const record = getTreeRecord(tab)
+    const record = getTreeRecord(tab, contextKey)
     if (!record) continue
     allRecords.push({ tabId: tab.id, record })
   }
@@ -2377,6 +2853,13 @@ function restoreFromVivExtData(contextKey, tabs) {
   }
 
   rootEntries.sort((left, right) => {
+    const leftTab = contextualTabs.find(tab => tab.id === left.tabId)
+    const rightTab = contextualTabs.find(tab => tab.id === right.tabId)
+    const leftPinned = !!(leftTab && leftTab.vivExtData && leftTab.vivExtData.pinnedFolder)
+    const rightPinned = !!(rightTab && rightTab.vivExtData && rightTab.vivExtData.pinnedFolder)
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1
+    }
     if (left.order !== right.order) return left.order - right.order
     return left.nativeIndex - right.nativeIndex
   })
@@ -2440,7 +2923,7 @@ function createTreePersistence(api) {
   }
 }
 
-module.exports = { createTreePersistence }
+module.exports = { createTreePersistence, migrateMetadataCache }
 
     },
     "store/tree-selectors.js": function(require, module, exports) {
@@ -2527,6 +3010,9 @@ function buildOrderedStructure(options) {
     const known = new Set()
     const preferredOrder = Array.isArray(node && (node.childIds || node.children)) ? (node.childIds || node.children) : []
 
+    const preferredOrderMap = new Map()
+    preferredOrder.forEach((id, index) => preferredOrderMap.set(id, index))
+
     for (const childId of preferredOrder) {
       if (childIds.includes(childId) && !known.has(childId)) {
         ordered.push(childId)
@@ -2542,8 +3028,8 @@ function buildOrderedStructure(options) {
     }
 
     ordered.sort((leftId, rightId) => {
-      const leftIndex = preferredOrder.indexOf(leftId)
-      const rightIndex = preferredOrder.indexOf(rightId)
+      const leftIndex = preferredOrderMap.has(leftId) ? preferredOrderMap.get(leftId) : -1
+      const rightIndex = preferredOrderMap.has(rightId) ? preferredOrderMap.get(rightId) : -1
       if (leftIndex !== -1 || rightIndex !== -1) {
         if (leftIndex === -1) return 1
         if (rightIndex === -1) return -1
@@ -2558,17 +3044,26 @@ function buildOrderedStructure(options) {
     childIdsByParent.set(parentId, ordered)
   }
 
+  const preferredRootMap = new Map()
+  preferredRootIds.forEach((id, index) => preferredRootMap.set(id, index))
+
   rootIds.sort((leftId, rightId) => {
-    const leftPreferredIndex = preferredRootIds.indexOf(leftId)
-    const rightPreferredIndex = preferredRootIds.indexOf(rightId)
+    const leftTab = tabsById.get(leftId)
+    const rightTab = tabsById.get(rightId)
+    const leftPinned = !!(leftTab && leftTab.vivExtData && leftTab.vivExtData.pinnedFolder)
+    const rightPinned = !!(rightTab && rightTab.vivExtData && rightTab.vivExtData.pinnedFolder)
+    if (leftPinned !== rightPinned) {
+      return leftPinned ? -1 : 1
+    }
+
+    const leftPreferredIndex = preferredRootMap.has(leftId) ? preferredRootMap.get(leftId) : -1
+    const rightPreferredIndex = preferredRootMap.has(rightId) ? preferredRootMap.get(rightId) : -1
     if (leftPreferredIndex !== -1 || rightPreferredIndex !== -1) {
       if (leftPreferredIndex === -1) return 1
       if (rightPreferredIndex === -1) return -1
       return leftPreferredIndex - rightPreferredIndex
     }
 
-    const leftTab = tabsById.get(leftId)
-    const rightTab = tabsById.get(rightId)
     return (leftTab ? leftTab.index : 0) - (rightTab ? rightTab.index : 0)
   })
 
@@ -2603,45 +3098,55 @@ function getFullTreeOrderIds(options) {
 
 function buildTreeView(options) {
   const structure = buildOrderedStructure(options)
-  const { treeState } = options || {}
   const { nodesById, tabsById, rootIds, childIdsByParent } = structure
 
   const visibleTabs = []
   let visibleIndex = 0
 
-  function walk(tabId, depth) {
+  function walk(tabId, depth, currentAncestors, isHidden) {
     const tab = tabsById.get(tabId)
-    if (!tab) return 0
+    if (!tab) return { visibleBranchSize: 0, subtreeSize: 0 }
     const node = nodesById[tabId] || { collapsed: false }
     const childIds = childIdsByParent.get(tabId) || []
     const item = {
       id: tab.id,
       tab,
       depth,
-      visibleIndex,
+      visibleIndex: isHidden ? -1 : visibleIndex,
       parentId: node.parentId != null ? node.parentId : null,
       hasChildren: childIds.length > 0,
       collapsed: !!node.collapsed,
       childCount: childIds.length,
-      subtreeSize: getSubtreeIds(tab.id, treeState).length,
-      ancestorIds: getAncestorIds(tab.id, treeState),
+      subtreeSize: 1,
+      ancestorIds: currentAncestors,
       visibleBranchSize: 1,
     }
 
-    visibleTabs.push(item)
-    visibleIndex += 1
-
-    if (node.collapsed) return 1
-    let visibleBranchSize = 1
-    for (const childId of childIds) {
-      visibleBranchSize += walk(childId, depth + 1)
+    if (!isHidden) {
+      visibleTabs.push(item)
+      visibleIndex += 1
     }
+
+    const nextAncestors = [...currentAncestors, tab.id]
+    const nextIsHidden = isHidden || !!node.collapsed
+    let visibleBranchSize = 1
+    let subtreeSize = 1
+
+    for (const childId of childIds) {
+      const childResult = walk(childId, depth + 1, nextAncestors, nextIsHidden)
+      subtreeSize += childResult.subtreeSize
+      if (!node.collapsed) {
+        visibleBranchSize += childResult.visibleBranchSize
+      }
+    }
+
+    item.subtreeSize = subtreeSize
     item.visibleBranchSize = visibleBranchSize
-    return visibleBranchSize
+    return { visibleBranchSize, subtreeSize }
   }
 
   for (const rootId of rootIds) {
-    walk(rootId, 0)
+    walk(rootId, 0, [], false)
   }
 
   return {
@@ -2751,6 +3256,7 @@ function createTreeController(api) {
   const treePersistence = createTreePersistence(api)
   const pendingCreatedTabs = new Map()
   const expectedCreations = []
+  const recentlyClosedTabs = []
   let pendingRemovalDirty = false
   let cachedDerivedView = null
   let persistQueue = Promise.resolve()
@@ -2879,6 +3385,12 @@ function createTreeController(api) {
         position: creation.position || null,
         createdAt: Date.now(),
       })
+
+      setTimeout(() => {
+        while (expectedCreations.length > 0 && Date.now() - expectedCreations[0].createdAt > 5000) {
+          expectedCreations.shift()
+        }
+      }, 5500)
     },
 
     capturePendingCreation(tab, sourceActiveTabId, meta = {}) {
@@ -2896,7 +3408,54 @@ function createTreeController(api) {
         sourceActiveTabId,
         expectedCreation,
         fromPinnedTab: !(expectedCreation && expectedCreation.kind === 'root') && !!(meta && meta.fromPinnedTab),
+        nativeIndex: tab.index,
       })
+    },
+
+    recordClosedTab(tab) {
+      if (!tab || !tab.url || tab.pinned) return
+      
+      const parentId = treeStore.getParentId(tab.id)
+      const treeState = treeStore.exportState()
+      
+      let siblingAnchorId = null
+      let isBefore = false
+
+      if (parentId != null) {
+        const parentNode = treeState.nodesById[parentId]
+        if (parentNode && parentNode.childIds) {
+          const idx = parentNode.childIds.indexOf(tab.id)
+          if (idx > 0) {
+            siblingAnchorId = parentNode.childIds[idx - 1]
+            isBefore = false
+          } else if (idx === 0 && parentNode.childIds.length > 1) {
+            siblingAnchorId = parentNode.childIds[1]
+            isBefore = true
+          }
+        }
+      } else {
+        const idx = treeState.rootIds.indexOf(tab.id)
+        if (idx > 0) {
+          siblingAnchorId = treeState.rootIds[idx - 1]
+          isBefore = false
+        } else if (idx === 0 && treeState.rootIds.length > 1) {
+          siblingAnchorId = treeState.rootIds[1]
+          isBefore = true
+        }
+      }
+
+      recentlyClosedTabs.unshift({
+        url: tab.url,
+        parentId,
+        siblingAnchorId,
+        isBefore,
+        nativeIndex: tab.index,
+        timestamp: Date.now()
+      })
+
+      if (recentlyClosedTabs.length > 50) {
+        recentlyClosedTabs.pop()
+      }
     },
 
     handleRemovedTab(tabId) {
@@ -2905,6 +3464,19 @@ function createTreeController(api) {
       if (pendingRemovalDirty) {
         invalidateDerivedView()
       }
+    },
+
+    handleReplacedTab(addedTabId, removedTabId) {
+      if (!treeStore.hasTab(removedTabId)) return false
+
+      const { migrateMetadataCache } = require('../store/tree-persistence.js')
+      migrateMetadataCache(removedTabId, addedTabId)
+
+      const changed = treeStore.replaceTabId(removedTabId, addedTabId)
+      if (changed) {
+        invalidateDerivedView()
+      }
+      return changed
     },
 
     clearStalePendingCreations(allTabs) {
@@ -3045,6 +3617,7 @@ function createTreeController(api) {
           title: tab.title || tab.url,
           url: tab.url,
           collapsed: !!(node && node.collapsed),
+          isFolder: !!(tab.vivExtData && tab.vivExtData.isFolder),
           children: childIds.map(buildNode).filter(Boolean),
         }
       }
@@ -3089,6 +3662,8 @@ function createTreeController(api) {
         currentContextKey,
         activeRegularTabId,
         sourceActiveTabId,
+        pinnedTabs = [],
+        unpinnedTabIds = [],
       } = options
 
       const contextChanged = await ensureContext(contextKey, tabs, currentContextKey)
@@ -3101,12 +3676,37 @@ function createTreeController(api) {
         pendingRemovalDirty = false
       }
 
+      // Pinning removes only the parent from the regular tree. Promote its
+      // children in place before repair can treat them as orphaned roots.
+      for (const tab of pinnedTabs) {
+        if (treeStore.removeTab(tab.id)) {
+          persistenceDirty = true
+          structuralDirty = true
+        }
+      }
+
       if (treeStore.repair(tabs.map(tab => tab.id))) {
         persistenceDirty = true
         structuralDirty = true
       }
 
       const tabsById = new Map(tabs.map(tab => [tab.id, tab]))
+
+      function getFirstUnpinnedRootIndex() {
+        const currentTreeState = treeStore.exportState()
+        const rootIds = Array.isArray(currentTreeState.rootIds) ? currentTreeState.rootIds : []
+        let index = 0
+        for (const rootId of rootIds) {
+          const tab = tabsById.get(rootId)
+          if (tab && tab.vivExtData && tab.vivExtData.pinnedFolder) {
+            index += 1
+          } else {
+            break
+          }
+        }
+        return index
+      }
+
       for (const tab of tabs) {
         if (treeStore.hasTab(tab.id)) continue
 
@@ -3119,8 +3719,45 @@ function createTreeController(api) {
 
         const expectedCreation = pendingCreation.expectedCreation || null
         let parentId = null
+        let matchedClosedTab = null
 
-        if (expectedCreation && expectedCreation.kind === 'child' && Number.isFinite(expectedCreation.parentTabId)) {
+        if (!expectedCreation) {
+          let idx = -1
+          if (tab.url && !isStartPageUrl(tab.url)) {
+            idx = recentlyClosedTabs.findIndex(item => item.url === tab.url)
+          }
+          if (idx === -1 && tab.title) {
+            idx = recentlyClosedTabs.findIndex(item => item.title === tab.title)
+          }
+          if (idx === -1 && pendingCreation.nativeIndex != null) {
+            idx = recentlyClosedTabs.findIndex(c => c.nativeIndex === pendingCreation.nativeIndex && (Date.now() - c.timestamp < 2000))
+          }
+          if (idx !== -1) {
+            matchedClosedTab = recentlyClosedTabs[idx]
+            recentlyClosedTabs.splice(idx, 1)
+          }
+        }
+
+        const isTopMode = settingsStore.get('newTabPlacement') === 'top'
+        const firstUnpinnedRootIndex = getFirstUnpinnedRootIndex()
+        const topRootTargetIndex = firstUnpinnedRootIndex
+        const rootTargetIndex = isTopMode ? topRootTargetIndex : undefined
+
+        if (matchedClosedTab) {
+          parentId = matchedClosedTab.parentId
+          if (matchedClosedTab.siblingAnchorId != null && treeStore.hasTab(matchedClosedTab.siblingAnchorId)) {
+            const attached = matchedClosedTab.isBefore
+              ? treeStore.attachBefore(tab.id, matchedClosedTab.siblingAnchorId)
+              : treeStore.attachAfter(tab.id, matchedClosedTab.siblingAnchorId)
+            
+            persistenceDirty = attached || persistenceDirty
+            structuralDirty = attached || structuralDirty
+            if (attached) {
+              pendingCreatedTabs.delete(tab.id)
+              continue
+            }
+          }
+        } else if (expectedCreation && expectedCreation.kind === 'child' && Number.isFinite(expectedCreation.parentTabId)) {
           parentId = expectedCreation.parentTabId
         } else if (expectedCreation && expectedCreation.kind === 'sibling' && Number.isFinite(expectedCreation.parentTabId)) {
           const siblingAnchorId = expectedCreation.parentTabId
@@ -3143,14 +3780,14 @@ function createTreeController(api) {
             structuralDirty = moved || structuralDirty
           }
         } else if (expectedCreation && expectedCreation.kind === 'root') {
-          treeStore.moveRoot(tab.id)
+          treeStore.moveRoot(tab.id, rootTargetIndex)
           persistenceDirty = true
           structuralDirty = true
         } else if (pendingCreation.fromPinnedTab) {
-          treeStore.moveRoot(tab.id, 0)
+          treeStore.moveRoot(tab.id, topRootTargetIndex)
           persistenceDirty = true
           structuralDirty = true
-        } else if (!(expectedCreation && expectedCreation.kind === 'root')) {
+        } else if (!(expectedCreation && expectedCreation.kind === 'root') && !matchedClosedTab) {
           const currentTreeState = treeStore.exportState()
           const looksLikeRootStartPage = isStartPageUrl(tab.url || '')
           parentId = resolveNewTabParent({
@@ -3160,6 +3797,11 @@ function createTreeController(api) {
             openerTabId: pendingCreation.openerTabId != null ? pendingCreation.openerTabId : tab.openerTabId,
             preferRoot: looksLikeRootStartPage,
           })
+          if (parentId == null && isTopMode) {
+            treeStore.moveRoot(tab.id, topRootTargetIndex)
+            persistenceDirty = true
+            structuralDirty = true
+          }
         }
 
         if (parentId != null) {
@@ -3170,6 +3812,18 @@ function createTreeController(api) {
         }
 
         pendingCreatedTabs.delete(tab.id)
+      }
+
+      // Unpinning is not a creation event. Place these tabs explicitly, keeping
+      // their pinned-strip order and leaving previously promoted children alone.
+      let unpinnedRootIndex = getFirstUnpinnedRootIndex()
+      const unpinAtTop = settingsStore.get('newTabPlacement') === 'top'
+      for (const tabId of unpinnedTabIds) {
+        if (!tabsById.has(tabId)) continue
+        if (treeStore.moveRoot(tabId, unpinAtTop ? unpinnedRootIndex++ : undefined)) {
+          persistenceDirty = true
+          structuralDirty = true
+        }
       }
 
       if (activeRegularTabId != null) {
@@ -3333,6 +3987,83 @@ function createTreeController(api) {
         movedIds: moveIds,
         parentId: position === 'inside' ? targetId : treeStore.getParentId(moveIds[0]),
       }
+    },
+
+    async moveTabsToTop(tabIds, tabs) {
+      const moveIds = normalizeTopLevelMoveIds(Array.isArray(tabIds) ? tabIds : [tabIds])
+      if (moveIds.length === 0) return false
+
+      const treeState = treeStore.exportState()
+      const rootIds = treeState.rootIds || []
+      const tabsById = new Map((Array.isArray(tabs) ? tabs : []).map(t => [t.id, t]))
+
+      const firstUnpinnedRootTabId = rootIds.find(id => {
+        if (moveIds.includes(id)) return false
+        const t = tabsById.get(id)
+        return !(t && t.vivExtData && t.vivExtData.pinnedFolder)
+      })
+
+      let changed = false
+      if (firstUnpinnedRootTabId != null) {
+        for (const tabId of moveIds) {
+          changed = treeStore.attachBefore(tabId, firstUnpinnedRootTabId) || changed
+        }
+      } else {
+        const lastPinnedFolderId = rootIds.slice().reverse().find(id => {
+          if (moveIds.includes(id)) return false
+          const t = tabsById.get(id)
+          return !!(t && t.vivExtData && t.vivExtData.pinnedFolder)
+        })
+
+        if (lastPinnedFolderId != null) {
+          const orderedMoveIds = moveIds.slice().reverse()
+          for (const tabId of orderedMoveIds) {
+            changed = treeStore.attachAfter(tabId, lastPinnedFolderId) || changed
+          }
+        } else {
+          for (let i = 0; i < moveIds.length; i += 1) {
+            changed = treeStore.moveRoot(moveIds[i], i) || changed
+          }
+        }
+      }
+
+      if (!changed) return false
+      invalidateDerivedView()
+      persistCurrentTree(tabs)
+      return { movedIds: moveIds }
+    },
+
+    async moveTabsToBottom(tabIds, tabs) {
+      const moveIds = normalizeTopLevelMoveIds(Array.isArray(tabIds) ? tabIds : [tabIds])
+      if (moveIds.length === 0) return false
+
+      const treeState = treeStore.exportState()
+      const rootIds = treeState.rootIds || []
+      const lastRootId = rootIds.slice().reverse().find(id => !moveIds.includes(id))
+
+      let changed = false
+      if (lastRootId != null) {
+        const orderedMoveIds = moveIds.slice().reverse()
+        for (const tabId of orderedMoveIds) {
+          changed = treeStore.attachAfter(tabId, lastRootId) || changed
+        }
+      } else {
+        for (let i = 0; i < moveIds.length; i += 1) {
+          changed = treeStore.moveRoot(moveIds[i], undefined) || changed
+        }
+      }
+
+      if (!changed) return false
+      invalidateDerivedView()
+      persistCurrentTree(tabs)
+      return { movedIds: moveIds }
+    },
+
+    getParentId(tabId) {
+      return treeStore.getParentId(tabId)
+    },
+    getState() {
+      return treeStore.exportState()
     },
   }
 }
@@ -3537,12 +4268,181 @@ function createNativeReconcile(api) {
 module.exports = { createNativeReconcile }
 
     },
+    "ui/folder-page.js": function(require, module, exports) {
+function escapeHtml(value) {
+  if (typeof value !== 'string') return ''
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function generateFolderPageUrl(tabState, folderTabId) {
+  const activeTab = tabState.tabs.find(t => t.id === folderTabId)
+  if (!activeTab || !activeTab.vivExtData || !activeTab.vivExtData.isFolder) {
+    return new URL('svb-folder.html', location.href).href
+  }
+
+  const folderNodeId = activeTab.vivExtData && activeTab.vivExtData.svbTree && activeTab.vivExtData.svbTree.nodeId
+  const descendants = []
+  
+  if (folderNodeId) {
+    const childrenByParent = new Map()
+    for (const t of tabState.tabs) {
+      const parentId = t.vivExtData && t.vivExtData.svbTree && t.vivExtData.svbTree.parentNodeId
+      if (parentId) {
+        if (!childrenByParent.has(parentId)) childrenByParent.set(parentId, [])
+        childrenByParent.get(parentId).push(t)
+      }
+    }
+
+    function collectDescendants(parentId) {
+      const children = childrenByParent.get(parentId) || []
+      for (const child of children) {
+        descendants.push(child)
+        const isChildFolder = child.vivExtData && child.vivExtData.isFolder
+        const childNodeId = child.vivExtData && child.vivExtData.svbTree && child.vivExtData.svbTree.nodeId
+        if (childNodeId && !isChildFolder) {
+          collectDescendants(childNodeId)
+        }
+      }
+    }
+    collectDescendants(folderNodeId)
+  }
+  let actualColorKey = activeTab.vivExtData.tabColor || activeTab.vivExtData.folderColor
+  
+  let html = `
+<div class="container">
+  <h1 class="header">
+    <svg viewBox="0 0 24 24" width="32" height="32" fill="currentColor">
+      <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+    </svg>
+    ${escapeHtml(activeTab.title)}
+  </h1>
+  <div class="grid">
+  `
+
+  if (descendants.length === 0) {
+    html += `<div style="opacity: 0.5; font-size: 16px; padding: 24px 0;">This folder is empty.</div>`
+  } else {
+    for (const childTab of descendants) {
+      let iconHtml = ''
+      if (childTab.vivExtData && childTab.vivExtData.isFolder) {
+        iconHtml = `
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor">
+            <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+          </svg>
+        `
+      } else if (childTab.favIconUrl && (!childTab.favIconUrl.startsWith('data:') || childTab.favIconUrl.length < 5000)) {
+        iconHtml = `<img src="${escapeHtml(childTab.favIconUrl)}" style="width: 24px; height: 24px; border-radius: 4px;">`
+      } else {
+        iconHtml = `<div style="width: 24px; height: 24px; border-radius: 4px; background: rgba(128,128,128,0.2);"></div>`
+      }
+
+      // Use an anchor tag that changes the hash
+      html += `
+        <a class="card" href="#svb-activate:${childTab.id}">
+          <div class="icon-box">${iconHtml}</div>
+          <div class="title">${escapeHtml(childTab.title)}</div>
+        </a>
+      `
+    }
+  }
+
+  html += `
+  </div>
+</div>
+  `
+
+  const style = `
+  body {
+    background: var(--colorBg, #1e1e1e);
+    color: var(--colorFg, #fff);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    padding: 40px;
+    margin: 0;
+  }
+  .container {
+    max-width: 1000px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .header {
+    margin-top: 0;
+    font-size: 28px;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 500;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--colorBgIntense, rgba(128,128,128,0.05));
+    border: 1px solid var(--colorBorder, rgba(128,128,128,0.1));
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .card:hover {
+    background: var(--colorBgHover, rgba(128,128,128,0.1));
+    transform: translateY(-2px);
+  }
+  .icon-box {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: var(--colorBg, transparent);
+  }
+  .title {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 15px;
+  }
+  `
+
+  const dataStr = JSON.stringify({
+    title: activeTab.title || 'Folder',
+    style: style,
+    html: html
+  })
+  
+  const base64 = btoa(unescape(encodeURIComponent(dataStr)))
+  const baseHref = typeof location !== 'undefined' && location.href ? location.href : 'chrome-extension://dummy/'
+  return new URL('svb-folder.html', baseHref).href + '#svb-folder:data=' + base64
+}
+
+module.exports = {
+  generateFolderPageUrl
+}
+
+    },
     "store/tab-store.js": function(require, module, exports) {
 const { settingsStore } = require('../store/settings-store.js')
 const { createTreeController } = require('../controllers/tree-controller.js')
 const { createNativeReconcile } = require('../controllers/native-reconcile.js')
+const { generateFolderPageUrl } = require('../ui/folder-page.js')
 
 const TREE_NAMESPACE_KEY = 'svbTree'
+
+const lastFolderUrlUpdates = new Map()
 
 function createTreeNodeId() {
   return `svb_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`
@@ -3903,6 +4803,7 @@ function createTabStore(api) {
   const nativeReconcile = createNativeReconcile(api)
   let contextLock = null
   let pendingActiveRepairTabId = null
+  const pendingPreactivatedCloseTimers = new Map()
   let pendingNativeReconcileReason = null
   let bookmarkSyncTimer = null
   let scheduledSyncTimer = null
@@ -4068,6 +4969,32 @@ function createTabStore(api) {
     return getAllVisibleTabs().find(tab => tab.id === tabId) || null
   }
 
+  function markTabsPreactivatedBeforeClose(tabIds) {
+    for (const tabId of tabIds) {
+      const previousTimer = pendingPreactivatedCloseTimers.get(tabId)
+      if (previousTimer) clearTimeout(previousTimer)
+      const timer = setTimeout(() => pendingPreactivatedCloseTimers.delete(tabId), 1500)
+      if (timer && typeof timer.unref === 'function') timer.unref()
+      pendingPreactivatedCloseTimers.set(tabId, timer)
+    }
+  }
+
+  function consumePreactivatedClose(tabId) {
+    const timer = pendingPreactivatedCloseTimers.get(tabId)
+    if (!timer) return false
+    clearTimeout(timer)
+    pendingPreactivatedCloseTimers.delete(tabId)
+    return true
+  }
+
+  function clearPreactivatedCloseMarks(tabIds) {
+    for (const tabId of tabIds) {
+      const timer = pendingPreactivatedCloseTimers.get(tabId)
+      if (timer) clearTimeout(timer)
+      pendingPreactivatedCloseTimers.delete(tabId)
+    }
+  }
+
   function getActivationTargetBeforeClose(targetIds) {
     const activeTabId = state.activeTabId
     if (!Number.isFinite(activeTabId)) return null
@@ -4083,11 +5010,17 @@ function createTabStore(api) {
       if (activeTreeItem) {
         const parentId = activeTreeItem.parentId
         const siblings = state.treeTabs.filter(item => item.parentId === parentId && !closeIds.has(item.id))
+        const activeIndexInTree = state.treeTabs.indexOf(activeTreeItem)
+
+        // Check if there are unclosed children under this active tab
+        const unclosedChildren = state.treeTabs.filter(item => item.parentId === activeTabId && !closeIds.has(item.id))
+
+        if (unclosedChildren.length > 0 && activateAfterClose === 'below') {
+          return unclosedChildren[0].id
+        }
 
         if (siblings.length > 0) {
           // Rule: Sibling prioritization
-          const activeIndexInTree = state.treeTabs.indexOf(activeTreeItem)
-          
           if (activateAfterClose === 'below') {
             // Try sibling BELOW
             const siblingBelow = siblings.find(s => state.treeTabs.indexOf(s) > activeIndexInTree)
@@ -4103,9 +5036,20 @@ function createTabStore(api) {
             const siblingBelow = siblings.find(s => state.treeTabs.indexOf(s) > activeIndexInTree)
             if (siblingBelow) return siblingBelow.id
           }
-        } else if (Number.isFinite(parentId) && !closeIds.has(parentId)) {
-          // Rule: Last child closed -> activate parent
-          return parentId
+        }
+
+        if (unclosedChildren.length > 0) {
+          return unclosedChildren[0].id
+        }
+
+        // If no sibling/children, walk up ancestors to find the nearest non-closed parent
+        let ancestorId = parentId
+        while (Number.isFinite(ancestorId)) {
+          if (!closeIds.has(ancestorId)) {
+            return ancestorId
+          }
+          const ancestorItem = state.treeTabs.find(item => item.id === ancestorId)
+          ancestorId = ancestorItem ? ancestorItem.parentId : null
         }
       }
     }
@@ -4137,30 +5081,69 @@ function createTabStore(api) {
     return null
   }
 
-  function activateBeforeCloseIfNeeded(targetIds) {
+  async function activateBeforeCloseIfNeeded(targetIds) {
     const activateTabId = getActivationTargetBeforeClose(targetIds)
     if (!Number.isFinite(activateTabId)) return
     pendingActiveRepairTabId = null
-    api.activateTab(activateTabId)
+
+    let resolveActivation
+    const activationEvent = new Promise(resolve => { resolveActivation = resolve })
+    const unsubscribe = api.onActivated
+      ? api.onActivated(activeInfo => {
+        if (activeInfo && activeInfo.tabId === activateTabId) resolveActivation(true)
+      })
+      : () => {}
+    let activationTimeout
+
+    try {
+      await api.activateTab(activateTabId)
+      const tabs = await api.getTabs(state.windowId)
+      if (tabs.some(tab => tab.id === activateTabId && tab.active)) return
+
+      const activated = await Promise.race([
+        activationEvent,
+        new Promise(resolve => {
+          activationTimeout = setTimeout(() => resolve(false), 1500)
+          if (activationTimeout && typeof activationTimeout.unref === 'function') activationTimeout.unref()
+        }),
+      ])
+      if (!activated) {
+        const latestTabs = await api.getTabs(state.windowId)
+        if (!latestTabs.some(tab => tab.id === activateTabId && tab.active)) {
+          throw new Error(`Tab ${activateTabId} did not become active before closing the current tab`)
+        }
+      }
+    } finally {
+      if (activationTimeout) clearTimeout(activationTimeout)
+      if (typeof unsubscribe === 'function') unsubscribe()
+    }
   }
 
-  function closeTabIds(tabIds) {
+  async function closeTabIds(tabIds) {
     const targetIds = normalizeUniqueIds(tabIds)
     if (targetIds.length === 0) return
-    const visibleIds = getPanelOrderIds()
-    if (visibleIds.length <= 1) return
-    const visibleTargetIds = targetIds.filter(tabId => visibleIds.includes(tabId))
-    if (visibleTargetIds.length === 0) return
-    if (visibleTargetIds.length >= visibleIds.length) return
+    
+    const allIds = state.pinnedTabs.map(tab => tab.id).concat(state.tabs.map(tab => tab.id))
+    if (allIds.length <= 1) return
+    
+    const validTargetIds = targetIds.filter(tabId => allIds.includes(tabId))
+    if (validTargetIds.length === 0) return
+    if (validTargetIds.length >= allIds.length) return
 
     pendingNativeReconcileReason = 'close'
     lockCurrentContext()
-    activateBeforeCloseIfNeeded(visibleTargetIds)
-    if (visibleTargetIds.length === 1) {
-      api.closeTab(visibleTargetIds[0])
-      return
+    await activateBeforeCloseIfNeeded(validTargetIds)
+    markTabsPreactivatedBeforeClose(validTargetIds)
+    try {
+      if (validTargetIds.length === 1) {
+        await api.closeTab(validTargetIds[0])
+        return
+      }
+      await api.closeTabs(validTargetIds)
+    } catch (error) {
+      clearPreactivatedCloseMarks(validTargetIds)
+      throw error
     }
-    api.closeTabs(visibleTargetIds)
   }
 
   async function updateTabs(tabIds, properties) {
@@ -4180,10 +5163,14 @@ function createTabStore(api) {
       const tab = tabsById.get(tabId)
       if (!tab) continue
       const nextData = buildVivExtData(tab)
+      tab.vivExtData = nextData
       tasks.push(api.updateVivExtData(tabId, nextData))
     }
 
     await Promise.all(tasks)
+    
+    // Give Vivaldi backend a moment to commit the vivExtData so getTabs doesn't return stale data
+    await new Promise(resolve => setTimeout(resolve, 150))
     await syncTabs({ preserveContext: true })
   }
 
@@ -4208,24 +5195,38 @@ function createTabStore(api) {
       nodeIdByTabId.set(tabId, typeof record?.nodeId === 'string' && record.nodeId ? record.nodeId : createTreeNodeId())
     }
 
+    const isTopMode = settingsStore.get('newTabPlacement') === 'top'
     let targetRootStartOrder = 0
     try {
       const allTabs = await api.getTabs(state.windowId)
-      const targetRootOrders = allTabs
-        .filter(tab => !movedIdSet.has(tab.id) && tab.workspaceId === workspaceId)
-        .map(tab => {
-          const record = tab
-            && tab.vivExtData
-            && tab.vivExtData[TREE_NAMESPACE_KEY]
-            && typeof tab.vivExtData[TREE_NAMESPACE_KEY] === 'object'
-            ? tab.vivExtData[TREE_NAMESPACE_KEY]
-            : null
-          return record && record.contextKey === targetContextKey && record.parentNodeId == null
-            ? Number(record.order)
-            : null
-        })
-        .filter(Number.isFinite)
-      targetRootStartOrder = targetRootOrders.length ? Math.max(...targetRootOrders) + 1 : allTabs.filter(tab => tab.workspaceId === workspaceId).length
+      const targetTabsInWorkspace = allTabs.filter(tab => !movedIdSet.has(tab.id) && tab.workspaceId === workspaceId)
+      const targetRootRecords = targetTabsInWorkspace.map(tab => {
+        const record = tab
+          && tab.vivExtData
+          && tab.vivExtData[TREE_NAMESPACE_KEY]
+          && typeof tab.vivExtData[TREE_NAMESPACE_KEY] === 'object'
+          ? tab.vivExtData[TREE_NAMESPACE_KEY]
+          : null
+        const isPinnedFolder = !!(tab.vivExtData && tab.vivExtData.pinnedFolder)
+        const order = record && record.contextKey === targetContextKey && record.parentNodeId == null && Number.isFinite(Number(record.order))
+          ? Number(record.order)
+          : null
+        return { order, isPinnedFolder }
+      })
+
+      const rootOrders = targetRootRecords.map(r => r.order).filter(Number.isFinite)
+
+      if (isTopMode) {
+        const regularOrders = targetRootRecords.filter(r => !r.isPinnedFolder && r.order != null).map(r => r.order)
+        if (regularOrders.length > 0) {
+          targetRootStartOrder = Math.min(...regularOrders) - targetIds.length
+        } else {
+          const pinnedOrders = targetRootRecords.filter(r => r.isPinnedFolder && r.order != null).map(r => r.order)
+          targetRootStartOrder = pinnedOrders.length > 0 ? Math.max(...pinnedOrders) + 1 : 0
+        }
+      } else {
+        targetRootStartOrder = rootOrders.length ? Math.max(...rootOrders) + 1 : targetTabsInWorkspace.length
+      }
     } catch (error) {
       console.warn('[svb] cannot inspect target workspace order', error)
     }
@@ -4337,9 +5338,27 @@ function createTabStore(api) {
     }
 
     const activeTab = derivedContext.activeTab
-    const visibleTabs = !shouldPreserveContext && Array.isArray(derivedContext.visibleTabs)
+    let visibleTabs = !shouldPreserveContext && Array.isArray(derivedContext.visibleTabs)
       ? derivedContext.visibleTabs
       : getVisibleTabsForContext(allTabs, nextContext)
+
+    // Auto-adopt orphaned tabs in a window when all tabs would otherwise be hidden due to stale workspace IDs
+    if (allTabs.length > 0 && visibleTabs.length === 0) {
+      const activeTab = allTabs.find(t => t.active) || allTabs[0]
+      if (activeTab && activeTab.workspaceId != null && nextContext.outsideWorkspace) {
+        for (const tab of allTabs) {
+          tab.workspaceId = null
+          if (tab.vivExtData && typeof tab.vivExtData === 'object') {
+            const nextVivExt = { ...tab.vivExtData }
+            delete nextVivExt.workspaceId
+            tab.vivExtData = nextVivExt
+            api.updateVivExtData(tab.id, nextVivExt).catch(() => {})
+          }
+        }
+        visibleTabs = allTabs
+      }
+    }
+
     const pinnedTabs = visibleTabs.filter(tab => tab.pinned)
     const tabs = stabilizeTabsByPanelOrder(
       visibleTabs.filter(tab => !tab.pinned),
@@ -4386,6 +5405,10 @@ function createTabStore(api) {
 
     const treeResult = await treeController.sync({
       tabs,
+      pinnedTabs,
+      unpinnedTabIds: state.pinnedTabs
+        .filter(previousTab => tabs.some(tab => tab.id === previousTab.id))
+        .map(tab => tab.id),
       contextKey,
       currentContextKey: state.treeContextKey,
       activeRegularTabId,
@@ -4429,6 +5452,30 @@ function createTabStore(api) {
       canCloseVisibleTabs,
     })
 
+    // Update folder dashboard if it's the active tab
+    const nextActiveTabId = state.activeTabId
+    if (nextActiveTabId && previousVisibleActiveTab && previousVisibleActiveTab.id === nextActiveTabId) {
+      // It was already active, or we just activated it
+      const activeTab = state.tabs.find(t => t.id === nextActiveTabId)
+      if (activeTab && activeTab.vivExtData && activeTab.vivExtData.isFolder) {
+        const newUrl = generateFolderPageUrl(state, nextActiveTabId)
+        if (activeTab.url !== newUrl && lastFolderUrlUpdates.get(nextActiveTabId) !== newUrl) {
+          lastFolderUrlUpdates.set(nextActiveTabId, newUrl)
+          api.updateTab(nextActiveTabId, { url: newUrl }).catch(() => {})
+        }
+      }
+    } else if (nextActiveTabId) {
+      // It's a new active tab
+      const activeTab = state.tabs.find(t => t.id === nextActiveTabId)
+      if (activeTab && activeTab.vivExtData && activeTab.vivExtData.isFolder) {
+        const newUrl = generateFolderPageUrl(state, nextActiveTabId)
+        if (activeTab.url !== newUrl && lastFolderUrlUpdates.get(nextActiveTabId) !== newUrl) {
+          lastFolderUrlUpdates.set(nextActiveTabId, newUrl)
+          api.updateTab(nextActiveTabId, { url: newUrl }).catch(() => {})
+        }
+      }
+    }
+
     if (actionReconcileReason) {
       nativeReconcile.scheduleAfterAction(actionReconcileReason)
     } else if (shouldScheduleStartupReconcile) {
@@ -4468,12 +5515,43 @@ function createTabStore(api) {
       if (nativeReconcile.isOwnOpenerUpdate(tabId, changeInfo)) {
         return
       }
+      
+      // Intercept clicks on dashboard cards
+      if (changeInfo && changeInfo.url && changeInfo.url.includes('#svb-activate:')) {
+        const match = changeInfo.url.match(/#svb-activate:(\d+)/)
+        if (match) {
+          const targetId = parseInt(match[1], 10)
+          lastFolderUrlUpdates.delete(tabId)
+          api.activateTab(targetId)
+        }
+      }
+
       refreshPreservingContext(tabId, changeInfo)
     }
 
-    const refreshFromActiveTab = (...args) => {
-      void args
+    const refreshFromActiveTab = (activeInfo) => {
+      const prevActiveId = state.activeTabId
       scheduleSync({ preserveContext: false }, 'event-active', 0).catch(error => console.error('[svb] sync failed', error))
+
+      const updateTabTime = (tabId, time) => {
+        const tab = state.tabs.find(t => t.id === tabId) || state.pinnedTabs.find(t => t.id === tabId)
+        if (tab && tab.vivExtData && typeof tab.vivExtData === 'object') {
+          const record = tab.vivExtData['svbTree']
+          if (record) {
+            const nextVivExtData = JSON.parse(JSON.stringify(tab.vivExtData))
+            nextVivExtData['svbTree'] = { ...record, createdAt: time }
+            api.updateVivExtData(tab.id, nextVivExtData).catch(error => console.error('[svb] failed to update active tab time', error))
+          }
+        }
+      }
+
+      const now = Date.now()
+      if (activeInfo && activeInfo.tabId) {
+        updateTabTime(activeInfo.tabId, now)
+      }
+      if (prevActiveId && (!activeInfo || prevActiveId !== activeInfo.tabId)) {
+        updateTabTime(prevActiveId, now)
+      }
     }
 
     const refreshBookmarks = () => {
@@ -4493,20 +5571,64 @@ function createTabStore(api) {
     }
 
     const handleRemoved = tabId => {
+      lastFolderUrlUpdates.delete(tabId)
+      const closedTab = state.tabs.find(t => t.id === tabId) || state.pinnedTabs.find(t => t.id === tabId)
+      if (closedTab && treeController.recordClosedTab) {
+        treeController.recordClosedTab(closedTab)
+      }
+
+      const wasActive = state.activeTabId === tabId
+      const targetActiveId = wasActive ? getActivationTargetBeforeClose([tabId]) : null
+      const wasPreactivatedForClose = consumePreactivatedClose(tabId)
+
       treeController.handleRemovedTab(tabId)
+
+      if (!wasPreactivatedForClose && Number.isFinite(targetActiveId)) {
+        api.activateTab(targetActiveId)
+      }
+
       refreshPreservingContext(tabId)
     }
 
-      unsubs = [
-        api.onCreated(handleCreated),
-        api.onUpdated(handleUpdated),
-        api.onRemoved(handleRemoved),
-        api.onMoved((tabId, moveInfo) => {
-          void moveInfo
-          nativeReconcile.isOwnMove(tabId)
-          refreshPreservingContext(tabId, moveInfo)
-        }),
-      api.onAttached(refreshPreservingContext),
+    const handleReplaced = (addedTabId, removedTabId) => {
+      lastFolderUrlUpdates.delete(removedTabId)
+      treeController.handleReplacedTab(addedTabId, removedTabId)
+      refreshPreservingContext(addedTabId)
+    }
+
+    unsubs = [
+      api.onCreated(handleCreated),
+      api.onUpdated(handleUpdated),
+      api.onRemoved(handleRemoved),
+      api.onReplaced ? api.onReplaced(handleReplaced) : () => {},
+      api.onMoved((tabId, moveInfo) => {
+        void moveInfo
+        nativeReconcile.isOwnMove(tabId)
+        refreshPreservingContext(tabId, moveInfo)
+      }),
+      api.onAttached(async (tabId) => {
+        try {
+          const allTabs = await api.getTabs(state.windowId)
+          const attachedTab = allTabs.find(t => t.id === tabId)
+          if (attachedTab) {
+            const targetWorkspaceId = state.activeWorkspaceId
+            if (attachedTab.workspaceId !== targetWorkspaceId) {
+              attachedTab.workspaceId = targetWorkspaceId
+              const nextVivExt = { ...(attachedTab.vivExtData || {}) }
+              if (targetWorkspaceId == null) {
+                delete nextVivExt.workspaceId
+              } else {
+                nextVivExt.workspaceId = targetWorkspaceId
+              }
+              attachedTab.vivExtData = nextVivExt
+              await api.updateVivExtData(tabId, nextVivExt).catch(() => {})
+            }
+          }
+        } catch (e) {
+          console.warn('[svb] onAttached workspace sync failed', e)
+        }
+        refreshPreservingContext(tabId)
+      }),
       api.onDetached(refreshPreservingContext),
       api.onActivated(refreshFromActiveTab),
       api.onWorkspacesChanged ? api.onWorkspacesChanged(() => {
@@ -4517,6 +5639,9 @@ function createTabStore(api) {
   }
 
   return {
+    getState() {
+      return state
+    },
     subscribe(listener) {
       listeners.add(listener)
       listener(state)
@@ -4528,6 +5653,7 @@ function createTabStore(api) {
       state = { ...state, windowId }
       bindEvents()
       await syncTabs({}, 'init')
+      this.startAutoCloseJob()
     },
 
     async reload() {
@@ -4538,6 +5664,86 @@ function createTabStore(api) {
       resetListeners()
       listeners.clear()
       releaseContextLock()
+      if (this._autoCloseTimer) clearInterval(this._autoCloseTimer)
+    },
+
+    startAutoCloseJob() {
+      if (this._autoCloseTimer) clearInterval(this._autoCloseTimer)
+      this.repairMissingCreatedAt().then(() => {
+        this.runAutoCloseJob()
+      })
+      // Check every hour
+      this._autoCloseTimer = setInterval(() => this.runAutoCloseJob(), 3600 * 1000)
+      if (this._autoCloseTimer && typeof this._autoCloseTimer.unref === 'function') {
+        this._autoCloseTimer.unref()
+      }
+    },
+
+    async repairMissingCreatedAt() {
+      const now = Date.now()
+      const allTabs = state.tabs.concat(state.pinnedTabs)
+      const payloads = []
+
+      for (const tab of allTabs) {
+        if (!tab.vivExtData || typeof tab.vivExtData !== 'object') continue
+        const record = tab.vivExtData['svbTree']
+        if (record && !record.createdAt) {
+          const nextVivExtData = JSON.parse(JSON.stringify(tab.vivExtData))
+          nextVivExtData['svbTree'] = { ...record, createdAt: now }
+          payloads.push({ tabId: tab.id, vivExtData: nextVivExtData })
+        }
+      }
+
+      for (let i = 0; i < payloads.length; i += 10) {
+        const chunk = payloads.slice(i, i + 10)
+        await Promise.all(chunk.map(p => api.updateVivExtData(p.tabId, p.vivExtData)))
+      }
+    },
+
+    runAutoCloseJob() {
+      const days = Number(settingsStore.get('autoCloseTabsDays'))
+      if (!days || days <= 0) return
+
+      const thresholdMs = days * 24 * 60 * 60 * 1000
+      const now = Date.now()
+      const expandedTargetIds = []
+      
+      const treeState = treeController.getState()
+      const rootIds = treeState ? treeState.rootIds : []
+
+      function isTabOrAncestorPinnedFolder(tabId) {
+        let currentId = tabId
+        const visited = new Set()
+        while (currentId != null && !visited.has(currentId)) {
+          visited.add(currentId)
+          const tab = getTabById(currentId)
+          if (tab && tab.vivExtData && typeof tab.vivExtData === 'object' && tab.vivExtData.pinnedFolder) {
+            return true
+          }
+          currentId = treeController.getParentId(currentId)
+        }
+        return false
+      }
+
+      for (const rootId of rootIds) {
+        const tab = state.tabs.find(t => t.id === rootId) || state.pinnedTabs.find(t => t.id === rootId)
+        if (!tab || tab.pinned || isTabOrAncestorPinnedFolder(rootId)) continue
+
+        const record = tab.vivExtData && typeof tab.vivExtData === 'object' && tab.vivExtData['svbTree']
+        if (record && record.createdAt) {
+          const age = now - Number(record.createdAt)
+          if (age > thresholdMs) {
+            const isFolder = tab.vivExtData.isFolder
+            const closeIds = isFolder ? treeController.getSubtreeTargetIds(rootId) : treeController.getCloseTargetIds(rootId)
+            const safeCloseIds = closeIds.filter(id => !isTabOrAncestorPinnedFolder(id))
+            expandedTargetIds.push(...(safeCloseIds.length ? safeCloseIds : [rootId]))
+          }
+        }
+      }
+
+      if (expandedTargetIds.length > 0) {
+        api.closeTabs(expandedTargetIds)
+      }
     },
 
     activateTab(tabId) {
@@ -4546,18 +5752,28 @@ function createTabStore(api) {
       api.activateTab(tabId)
     },
 
-    closeTab(tabId) {
+    async closeTab(tabId) {
       if (!state.canCloseVisibleTabs) return
-      const closeTargetIds = treeController.getCloseTargetIds(tabId)
+      
+      const tab = getTabById(tabId)
+      const isFolder = tab && tab.vivExtData && tab.vivExtData.isFolder
+      const closeTargetIds = isFolder ? treeController.getSubtreeTargetIds(tabId) : treeController.getCloseTargetIds(tabId)
+      
       if (closeTargetIds.length === 0) return
       pendingNativeReconcileReason = 'close'
       lockCurrentContext()
-      activateBeforeCloseIfNeeded(closeTargetIds)
-      if (closeTargetIds.length === 1) {
-        api.closeTab(closeTargetIds[0])
-        return
+      await activateBeforeCloseIfNeeded(closeTargetIds)
+      markTabsPreactivatedBeforeClose(closeTargetIds)
+      try {
+        if (closeTargetIds.length === 1) {
+          await api.closeTab(closeTargetIds[0])
+          return
+        }
+        await api.closeTabs(closeTargetIds)
+      } catch (error) {
+        clearPreactivatedCloseMarks(closeTargetIds)
+        throw error
       }
-      api.closeTabs(closeTargetIds)
     },
 
     closeTabIds,
@@ -4594,6 +5810,66 @@ function createTabStore(api) {
         vivExtData: kind === 'child' 
           ? getCreateVivExtDataForChild(state, targetId)
           : getCreateVivExtDataForState(state),
+      })
+    },
+
+    createFolderTab() {
+      if (state.windowId == null) return
+      const folderName = 'New Folder'
+      const folderColor = 'blue'
+      const url = new URL('svb-folder.html', location.href).href + '#svb-folder:color=' + folderColor
+      
+      const vivExtData = {
+        isFolder: true,
+        folderColor,
+        fixedTitle: folderName
+      }
+      
+      treeController.registerExpectedCreation({ kind: 'root' })
+      pendingNativeReconcileReason = 'create-root'
+      api.createTab(state.windowId, {
+        url,
+        vivExtData: {
+          ...getCreateVivExtDataForState(state),
+          ...vivExtData
+        }
+      })
+    },
+
+    createFolderTabAt(targetId, position) {
+      if (state.windowId == null || !Number.isFinite(targetId) || !position) return
+      
+      const folderName = 'New Folder'
+      const folderColor = 'blue'
+      const url = new URL('svb-folder.html', location.href).href + '#svb-folder:color=' + folderColor
+      
+      const vivExtData = {
+        isFolder: true,
+        folderColor,
+        fixedTitle: folderName
+      }
+      
+      const kind = position === 'inside' ? 'child' : 'sibling'
+      treeController.registerExpectedCreation({
+        kind,
+        parentTabId: targetId,
+        position,
+      })
+
+      const index = position === 'inside' 
+        ? treeController.getCreateChildIndex(targetId, state.tabs)
+        : position === 'before'
+          ? getTabById(targetId).index
+          : treeController.getCreateSiblingIndex(targetId, state.tabs)
+
+      pendingNativeReconcileReason = `create-${kind}-at`
+      api.createChildTab(state.windowId, targetId, {
+        url,
+        index,
+        vivExtData: {
+          ...(kind === 'child' ? getCreateVivExtDataForChild(state, targetId) : getCreateVivExtDataForState(state)),
+          ...vivExtData
+        }
       })
     },
 
@@ -4666,6 +5942,24 @@ function createTabStore(api) {
       return true
     },
 
+    async moveSelectionToTop(tabId, selectedIds) {
+      const targetIds = getActionTargetIds(tabId, selectedIds)
+      if (targetIds.length === 0) return false
+      if (!await treeController.moveTabsToTop(targetIds, state.tabs)) return false
+      pendingNativeReconcileReason = 'move-top'
+      await syncTabs({ preserveContext: true }, 'move-top')
+      return true
+    },
+
+    async moveSelectionToBottom(tabId, selectedIds) {
+      const targetIds = getActionTargetIds(tabId, selectedIds)
+      if (targetIds.length === 0) return false
+      if (!await treeController.moveTabsToBottom(targetIds, state.tabs)) return false
+      pendingNativeReconcileReason = 'move-bottom'
+      await syncTabs({ preserveContext: true }, 'move-bottom')
+      return true
+    },
+
     restoreLastClosedTab() {
       if (!api.restoreLastClosedTab) return
       api.restoreLastClosedTab().catch(error => console.error('[svb] cannot restore tab', error))
@@ -4673,71 +5967,15 @@ function createTabStore(api) {
 
     async moveSelectionToNewWindow(tabId, selectedIds) {
       const targetIds = getTreeActionTargetIds(tabId, selectedIds)
-      console.log('[svb] moveSelectionToNewWindow targetIds:', targetIds)
       if (targetIds.length === 0 || !api.moveTabsToNewWindow) return
-      
-      // Lock context to prevent workspace jumping during detachment
-      lockCurrentContext()
 
       try {
-        const moveRecords = treeController.getWorkspaceMoveRecords(targetIds)
-        console.log('[svb] moveRecords count:', moveRecords.length)
-        const moveRecordById = new Map(moveRecords.map(record => [record.tabId, record]))
-        const visibleTabsById = new Map(getAllVisibleTabs().map(tab => [tab.id, tab]))
-        const nodeIdByTabId = new Map()
-        const detachedContextKey = `detached:${Date.now().toString(36)}:${Math.random().toString(36).slice(2, 8)}`
-
-        for (const targetId of targetIds) {
-          const tab = visibleTabsById.get(targetId)
-          const record = tab
-            && tab.vivExtData
-            && tab.vivExtData[TREE_NAMESPACE_KEY]
-            && typeof tab.vivExtData[TREE_NAMESPACE_KEY] === 'object'
-            ? tab.vivExtData[TREE_NAMESPACE_KEY]
-            : null
-          nodeIdByTabId.set(targetId, typeof record?.nodeId === 'string' && record.nodeId ? record.nodeId : createTreeNodeId())
-        }
-
-        await updateVivExtDataForTabs(targetIds, tab => {
-          const previousData = tab && tab.vivExtData && typeof tab.vivExtData === 'object' ? tab.vivExtData : {}
-          const previousTreeData = previousData[TREE_NAMESPACE_KEY] && typeof previousData[TREE_NAMESPACE_KEY] === 'object'
-            ? previousData[TREE_NAMESPACE_KEY]
-            : null
-          const moveRecord = moveRecordById.get(tab.id) || null
-          const parentNodeId = moveRecord && Number.isFinite(moveRecord.parentId)
-            ? nodeIdByTabId.get(moveRecord.parentId) || null
-            : null
-          const order = moveRecord
-            ? (parentNodeId == null ? moveRecord.rootIndex : moveRecord.siblingIndex)
-            : (previousTreeData && Number.isFinite(Number(previousTreeData.order)) ? Number(previousTreeData.order) : 0)
-
-          return {
-            ...previousData,
-            [TREE_NAMESPACE_KEY]: {
-              ...(previousTreeData || {}),
-              version: (previousTreeData && Number(previousTreeData.version)) || 1,
-              contextKey: detachedContextKey,
-              nodeId: nodeIdByTabId.get(tab.id) || createTreeNodeId(),
-              parentNodeId,
-              collapsed: !!(previousTreeData && previousTreeData.collapsed),
-              order,
-            },
-          }
-        })
-
-        console.log('[svb] calling api.moveTabsToNewWindow with:', targetIds)
-        // Delay to allow Vivaldi 8 to settle metadata updates
-        await new Promise(resolve => setTimeout(resolve, 300))
         await api.moveTabsToNewWindow(targetIds)
+      } catch (error) {
+        console.error('[svb] moveSelectionToNewWindow failed', error)
       } finally {
-        // Short delay before releasing lock to let Vivaldi internal events settle
-        setTimeout(() => {
-          releaseContextLock()
-          syncTabs({ preserveContext: true }).catch(() => {})
-        }, 1500)
+        await syncTabs({ preserveContext: true }, 'move-window')
       }
-      
-      await syncTabs({ preserveContext: true })
     },
 
     async moveSelectionToWorkspace(tabId, selectedIds, workspaceId) {
@@ -4804,7 +6042,50 @@ function createTabStore(api) {
     async togglePinnedForSelection(tabId, selectedIds) {
       const targetIds = getActionTargetIds(tabId, selectedIds)
       const tab = getTabById(tabId)
-      await updateTabs(targetIds, { pinned: !(tab && tab.pinned) })
+      const isFolder = tab && tab.vivExtData && tab.vivExtData.isFolder
+
+      if (isFolder) {
+        const currentlyPinned = tab.vivExtData && tab.vivExtData.pinnedFolder
+        const nextPinned = !currentlyPinned
+
+        // Store pinnedFolder at top level of vivExtData (not inside svbTree)
+        // so tree persistence doesn't overwrite it
+        await updateVivExtDataForTabs([tabId], targetTab => {
+          const previousData = targetTab && targetTab.vivExtData && typeof targetTab.vivExtData === 'object' ? targetTab.vivExtData : {}
+          return {
+            ...previousData,
+            pinnedFolder: nextPinned
+          }
+        })
+
+        // If pinning, physically move folder to the very top of the tree
+        if (nextPinned) {
+          const firstRootTab = state.treeTabs.find(item => item.depth === 0 && item.id !== tabId)
+          if (firstRootTab) {
+            await treeController.moveTab(tabId, firstRootTab.id, 'before', state.tabs)
+          }
+        } else {
+          // If unpinning, physically move folder below the last pinned folder
+          const firstUnpinnedRootTab = state.treeTabs.find(item => {
+            if (item.depth !== 0 || item.id === tabId) return false
+            const t = getTabById(item.id)
+            return !(t && t.vivExtData && t.vivExtData.pinnedFolder)
+          })
+          if (firstUnpinnedRootTab) {
+            await treeController.moveTab(tabId, firstUnpinnedRootTab.id, 'before', state.tabs)
+          } else {
+            const lastRootTab = state.treeTabs.slice().reverse().find(item => item.depth === 0 && item.id !== tabId)
+            if (lastRootTab) {
+              await treeController.moveTab(tabId, lastRootTab.id, 'after', state.tabs)
+            }
+          }
+        }
+
+        pendingNativeReconcileReason = 'toggle-pinned-folder'
+        await syncTabs({ preserveContext: true }, 'toggle-pinned-folder')
+      } else {
+        await updateTabs(targetIds, { pinned: !(tab && tab.pinned) })
+      }
     },
 
     async toggleMutedForSelection(tabId, selectedIds) {
@@ -4812,6 +6093,19 @@ function createTabStore(api) {
       const tab = getTabById(tabId)
       const muted = !(tab && tab.muted)
       await updateTabs(targetIds, { muted })
+    },
+
+    async refreshWorkspaces() {
+      if (!api.getWorkspaces) return
+      try {
+        const workspaces = await api.getWorkspaces()
+        if (Array.isArray(workspaces)) {
+          state = { ...state, workspaces }
+          notify()
+        }
+      } catch (e) {
+        console.warn('[svb] manual refreshWorkspaces failed', e)
+      }
     },
 
     async renameTab(tabId, title) {
@@ -4880,13 +6174,88 @@ function createTabStore(api) {
 
     // Hibernate (discard) tabs to free memory. The active tab can't be
     // discarded by Chromium, so skip it.
-    hibernateSelection(tabId, selectedIds) {
+    async hibernateSelection(tabId, selectedIds) {
       if (!api.discardTab) return
       const targetIds = getActionTargetIds(tabId, selectedIds)
       for (const id of targetIds) {
         const tab = getTabById(id)
-        if (tab && !tab.active) api.discardTab(id)
+        if (tab && !tab.active) {
+          const oldIndex = tab.index
+          let oldSiblingAnchorId = null
+          let isBefore = false
+          let oldParentId = null
+
+          const nodeIndex = state.treeTabs.findIndex(t => t.id === id)
+          if (nodeIndex !== -1) {
+            const node = state.treeTabs[nodeIndex]
+            oldParentId = node.parentId
+            const siblings = state.treeTabs.filter(t => t.parentId === node.parentId)
+            const siblingIndex = siblings.findIndex(t => t.id === id)
+            
+            if (siblingIndex > 0) {
+              oldSiblingAnchorId = siblings[siblingIndex - 1].id
+              isBefore = false
+            } else if (siblingIndex === 0 && siblings.length > 1) {
+              oldSiblingAnchorId = siblings[1].id
+              isBefore = true
+            }
+          }
+
+          if (oldSiblingAnchorId != null) {
+            treeController.registerExpectedCreation({
+              kind: 'sibling',
+              parentTabId: oldSiblingAnchorId,
+              position: isBefore ? 'before' : 'after'
+            })
+          } else if (oldParentId != null) {
+            treeController.registerExpectedCreation({
+              kind: 'child',
+              parentTabId: oldParentId
+            })
+          } else {
+             // Let it fall back for root tabs
+          }
+
+          const newTabId = await api.discardTab(id)
+          const targetTabId = newTabId || id
+          
+          if (targetTabId) {
+            if (api.moveTab && oldIndex != null) {
+              await api.moveTab(targetTabId, oldIndex).catch(() => {})
+            }
+            
+            const tryAttach = () => {
+              if (oldSiblingAnchorId != null) {
+                treeController.moveTab(targetTabId, oldSiblingAnchorId, isBefore ? 'before' : 'after', state.tabs).catch(() => {})
+              } else if (oldParentId != null) {
+                treeController.moveTab(targetTabId, oldParentId, 'inside', state.tabs).catch(() => {})
+              }
+            }
+            
+            tryAttach()
+            setTimeout(tryAttach, 50)
+            setTimeout(tryAttach, 200)
+          }
+        }
       }
+    },
+
+    copySelectionUrl(tabId, selectedIds) {
+      const targetIds = getActionTargetIds(tabId, selectedIds)
+      const text = targetIds.map(id => getTabById(id)).filter(t => t && t.url).map(t => t.url).join('\n')
+      if (text) navigator.clipboard.writeText(text).catch(() => {})
+    },
+
+    copySelectionTitle(tabId, selectedIds) {
+      const targetIds = getActionTargetIds(tabId, selectedIds)
+      const text = targetIds.map(id => getTabById(id)).filter(t => t && t.title).map(t => t.title).join('\n')
+      if (text) navigator.clipboard.writeText(text).catch(() => {})
+    },
+
+    copySelectionMarkdown(tabId, selectedIds) {
+      const targetIds = getActionTargetIds(tabId, selectedIds)
+      const text = targetIds.map(id => getTabById(id)).filter(t => t && t.url).map(t => `[${t.title || t.url}](${t.url})`).join('\n')
+      if (text) navigator.clipboard.writeText(text).catch(() => {})
     },
 
     async bookmarkTab(tabId) {
@@ -4894,6 +6263,17 @@ function createTabStore(api) {
       const tab = getTabById(tabId)
       if (!tab || !tab.url) return
       await api.bookmarkTab({ title: tab.title || tab.url, url: tab.url })
+    },
+
+    async bookmarkSelection(tabId, selectedIds) {
+      if (!api.bookmarkTab) return
+      const targetIds = getActionTargetIds(tabId, selectedIds)
+      for (const id of targetIds) {
+        const tab = getTabById(id)
+        if (tab && tab.url) {
+          await api.bookmarkTab({ title: tab.title || tab.url, url: tab.url })
+        }
+      }
     },
 
     async saveTreeAsBookmark(tabId) {
@@ -4914,12 +6294,18 @@ function createTabStore(api) {
       let createdCount = 0
 
       async function createNode(node, parentId) {
+        let folderUrl = node.url
+        if (node.isFolder) {
+          folderUrl = new URL('svb-folder.html', location.href).href + '#svb-folder:color=blue'
+        }
+
         const tab = await api.createRestoredTab(state.windowId, {
-          url: node.url,
-          active: createdCount === 0,
+          url: folderUrl,
+          active: createdCount === 0 && !node.isFolder,
           vivExtData: {
             ...baseVivExtData,
             fixedTitle: node.title,
+            ...(node.isFolder ? { isFolder: true, folderColor: 'blue' } : {})
           },
         })
         const tabId = tab && Number(tab.id)
@@ -4973,7 +6359,9 @@ function createTabStore(api) {
       const targetIds = getActionTargetIds(tabId, selectedIds)
       const expandedTargetIds = []
       for (const targetId of targetIds) {
-        const closeIds = treeController.getCloseTargetIds(targetId)
+        const tab = getTabById(targetId)
+        const isFolder = tab && tab.vivExtData && tab.vivExtData.isFolder
+        const closeIds = isFolder ? treeController.getSubtreeTargetIds(targetId) : treeController.getCloseTargetIds(targetId)
         expandedTargetIds.push(...(closeIds.length ? closeIds : [targetId]))
       }
       closeTabIds(expandedTargetIds)
@@ -5177,7 +6565,7 @@ function createSelectionStore() {
     return result
   }
 
-  function setState(nextState) {
+  function setState(nextState, source = 'user') {
     state = {
       selectedIds: normalizeIds(nextState.selectedIds),
       anchorId: Number.isFinite(nextState.anchorId) ? nextState.anchorId : null,
@@ -5187,7 +6575,7 @@ function createSelectionStore() {
       selectedIds: state.selectedIds.slice(),
       anchorId: state.anchorId,
       focusedId: state.focusedId,
-    })
+    }, source)
   }
 
   function buildRange(anchorId, targetId, orderedVisibleIds) {
@@ -5231,12 +6619,12 @@ function createSelectionStore() {
       return state.selectedIds.includes(tabId)
     },
 
-    selectSingle(tabId) {
+    selectSingle(tabId, { source = 'user' } = {}) {
       setState({
         selectedIds: [tabId],
         anchorId: tabId,
         focusedId: tabId,
-      })
+      }, source)
     },
 
     toggleSelected(tabId) {
@@ -5301,7 +6689,7 @@ function createSelectionStore() {
         selectedIds,
         anchorId,
         focusedId,
-      })
+      }, 'browser')
     },
   }
 }
@@ -5576,7 +6964,33 @@ function getVivaldiMainView() {
 
   return {
     async getWorkspaces() {
-      // 1. Try internal WorkspaceStore (Most reliable in Vivaldi 8)
+      // 1. Try Prefs (Guaranteed to be instantly updated by Vivaldi when workspaces change)
+      const prefsApi = getPrefsApi()
+      if (prefsApi && typeof prefsApi.get === 'function') {
+        try {
+          const workspaces = await promisifyChromeApi(prefsApi.get, 'vivaldi.workspaces.list')
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {
+          console.warn('[svb] prefs workspaces fetch failed:', e)
+        }
+      }
+
+      // 2. Try native API
+      const workspacesApi = typeof vivaldi !== 'undefined' && vivaldi.workspaces
+      if (workspacesApi && typeof workspacesApi.getAll === 'function') {
+        try {
+          const workspaces = await promisifyChromeApi(workspacesApi.getAll)
+          if (Array.isArray(workspaces) && workspaces.length > 0) {
+            return workspaces.map(normalizeWorkspace).filter(Boolean)
+          }
+        } catch (e) {
+          console.warn('[svb] native workspaces.getAll failed:', e)
+        }
+      }
+
+      // 3. Fallback to internal WorkspaceStore
       const store = getWorkspaceStore()
       if (store) {
         try {
@@ -5588,28 +7002,6 @@ function getVivaldiMainView() {
           console.warn('[svb] WorkspaceStore fetch failed:', e)
         }
       }
-
-      // 2. Fallback to native API
-      const workspacesApi = typeof vivaldi !== 'undefined' && vivaldi.workspaces
-      if (workspacesApi && typeof workspacesApi.getAll === 'function') {
-        try {
-          const workspaces = await promisifyChromeApi(workspacesApi.getAll)
-          if (Array.isArray(workspaces) && workspaces.length > 0) {
-            return workspaces.map(normalizeWorkspace).filter(Boolean)
-          }
-        } catch (e) {}
-      }
-
-      // 3. Fallback to Prefs
-      const prefsApi = getPrefsApi()
-      if (!prefsApi || typeof prefsApi.get !== 'function') return []
-      
-      try {
-        const workspaces = await promisifyChromeApi(prefsApi.get, 'vivaldi.workspaces.list')
-        if (Array.isArray(workspaces)) {
-          return workspaces.map(normalizeWorkspace).filter(Boolean)
-        }
-      } catch (e) {}
 
       return []
     },
@@ -5810,7 +7202,6 @@ function getVivaldiMainView() {
           nativeTarget = pages
         }
 
-        console.log('[svb] detaching native pages:', pages.length, 'using', nativeTarget?.constructor?.name || typeof nativeTarget)
         await detachPage(nativeTarget)
         return true
       } catch (error) {
@@ -5821,31 +7212,45 @@ function getVivaldiMainView() {
 
     setSelectedTabs(tabIds) {
       const ids = Array.isArray(tabIds) ? tabIds.map(Number).filter(Number.isFinite) : []
-      const actions = getPageActions()
+      const actions = findModuleByExports(m => typeof m.setSelection === 'function') || getPageActions()
       const store = getPageStore()
       
       const setSelection = actions && typeof actions.setSelection === 'function' ? actions.setSelection : null
       const clearSelection = actions && typeof actions.clearSelection === 'function' ? actions.clearSelection : null
       const getPageById = store && typeof store.getPageById === 'function' ? store.getPageById.bind(store) : null
 
-      if (!setSelection || !getPageById) return false
+      const reduxStore = findModuleByExports(m => m && typeof m.getState === 'function' && typeof m.dispatch === 'function')
+
+      if (!getPageById) return false
 
       try {
-        // 1. Clear existing selection if we have new IDs to select
-        if (ids.length > 0 && typeof clearSelection === 'function') {
+        // 1. Clear existing selection if possible as a safeguard.
+        if (ids.length > 0) {
           const firstPage = getPageById(ids[0])
           if (firstPage && firstPage.windowId) {
-            clearSelection(firstPage.windowId)
+            if (typeof clearSelection === 'function') {
+              clearSelection(firstPage.windowId)
+            } else if (reduxStore) {
+              reduxStore.dispatch({ actionType: "PAGE_SELECTION_CLEAR", windowId: firstPage.windowId })
+            }
           }
         }
 
-        // 2. Apply new selection individually
-        ids.forEach((id) => {
+        // 2. Apply new selection individually.
+        ids.forEach((id, index) => {
           const page = getPageById(id)
           if (page) {
-            // multiSelect: false to avoid range (Shift) selection
-            // addGroup: true to add to the selection group (Ctrl behavior)
-            setSelection(page, { multiSelect: false, addGroup: true })
+            if (setSelection) {
+              setSelection(page, { multiSelect: false, addGroup: index > 0 })
+            } else if (reduxStore) {
+              reduxStore.dispatch({
+                actionType: "PAGE_SELECTION_SET",
+                page: page,
+                multiSelect: false,
+                addGroup: index > 0,
+                excludeActive: false
+              })
+            }
           }
         })
         return true
@@ -5856,17 +7261,25 @@ function getVivaldiMainView() {
     },
 
     onWorkspacesChanged(listener) {
-      // 1. Try WorkspaceStore listener (Immediate updates)
-      const store = getWorkspaceStore()
-      if (store && typeof store.addListener === 'function') {
-        const wrapped = () => {
-          listener(store.getWorkspaces())
+        // 1. Try WorkspaceStore listener (Immediate updates)
+        const store = getWorkspaceStore()
+        if (store) {
+          const wrapped = () => {
+            listener(store.getWorkspaces())
+          }
+          if (typeof store.addListener === 'function') {
+            store.addListener(wrapped)
+            return () => store.removeListener(wrapped)
+          } else if (typeof store.addChangeListener === 'function') {
+            store.addChangeListener(wrapped)
+            return () => store.removeChangeListener(wrapped)
+          } else if (typeof store.subscribe === 'function') {
+            const unsubscribe = store.subscribe(wrapped)
+            return () => unsubscribe && unsubscribe()
+          }
         }
-        store.addListener(wrapped)
-        return () => store.removeListener(wrapped)
-      }
-
-      // 2. Fallback to Prefs listener
+  
+        // 2. Fallback to Prefs listener
       const prefsApi = getPrefsApi()
       if (!prefsApi || typeof prefsApi.onChanged === 'undefined') return () => {}
 
@@ -5892,6 +7305,7 @@ const {
   isSettingsUrl,
 } = require('./internal-page-meta.js')
 const { createVivaldiBridge } = require('./vivaldi-bridge.js')
+const { settingsStore } = require('../store/settings-store.js')
 
 function promisifyChromeApi(fn, ...args) {
   return new Promise((resolve, reject) => {
@@ -5929,21 +7343,7 @@ function serializeVivExtData(vivExtData) {
   if (!vivExtData || typeof vivExtData !== 'object') {
     return undefined
   }
-
-  const payload = {}
-
-  if (typeof vivExtData.workspaceId !== 'undefined' && vivExtData.workspaceId != null) {
-    payload.workspaceId = vivExtData.workspaceId
-  }
-
-  if (typeof vivExtData.group !== 'undefined' && vivExtData.group != null) {
-    payload.group = vivExtData.group
-  }
-
-  if (typeof vivExtData.fixedTitle === 'string' && vivExtData.fixedTitle.trim()) {
-    payload.fixedTitle = vivExtData.fixedTitle.trim()
-  }
-
+  const payload = { ...vivExtData }
   return Object.keys(payload).length ? JSON.stringify(payload) : undefined
 }
 
@@ -6013,7 +7413,21 @@ function getFallbackFaviconUrl(tab) {
 }
 
 function normalizeTab(tab) {
-  const vivExtData = parseVivExtData(tab.vivExtData)
+  let vivExtData = parseVivExtData(tab.vivExtData)
+  
+  // Intercept Folder restoration from bookmarks via URL hash
+  if (tab.url && tab.url.startsWith('data:text/html') && tab.url.includes('#svb-folder:')) {
+    const isFolder = true
+    let folderColor = 'blue'
+    const colorMatch = tab.url.match(/#svb-folder:color=([^&]+)/)
+    if (colorMatch) folderColor = colorMatch[1]
+
+    if (!vivExtData || typeof vivExtData !== 'object') vivExtData = {}
+    if (!vivExtData.isFolder) {
+      vivExtData.isFolder = isFolder
+      vivExtData.folderColor = folderColor
+    }
+  }
 
   return {
     id: tab.id,
@@ -6184,8 +7598,9 @@ function createTabsApi() {
       return vivaldiBridge.onWorkspacesChanged(listener)
     },
 
-    activateTab(tabId) {
-      tabsApi.update(tabId, { active: true })
+    async activateTab(tabId) {
+      if (!Number.isFinite(tabId)) return null
+      return promisifyChromeApi(tabsApi.update, tabId, { active: true })
     },
 
     async updateTab(tabId, properties) {
@@ -6203,12 +7618,14 @@ function createTabsApi() {
       return promisifyChromeApi(tabsApi.move, tabId, { index })
     },
 
-    closeTab(tabId) {
-      tabsApi.remove(tabId)
+    async closeTab(tabId) {
+      if (!Number.isFinite(tabId)) return null
+      return promisifyChromeApi(tabsApi.remove, tabId)
     },
 
-    closeTabs(tabIds) {
-      tabsApi.remove(tabIds)
+    async closeTabs(tabIds) {
+      if (!Array.isArray(tabIds) || tabIds.length === 0) return null
+      return promisifyChromeApi(tabsApi.remove, tabIds)
     },
 
     async duplicateTab(tabId) {
@@ -6221,9 +7638,20 @@ function createTabsApi() {
       tabsApi.reload(tabId, { bypassCache: !!bypassCache })
     },
 
-    discardTab(tabId) {
-      if (!Number.isFinite(tabId) || typeof tabsApi.discard !== 'function') return
-      tabsApi.discard(tabId)
+    async discardTab(tabId) {
+      if (!Number.isFinite(tabId) || typeof tabsApi.discard !== 'function') return null
+      try {
+        const newTab = await tabsApi.discard(tabId)
+        return newTab ? newTab.id : null
+      } catch (err) {
+        try {
+          const newTab = await promisifyChromeApi(tabsApi.discard, tabId)
+          return newTab ? newTab.id : null
+        } catch (fallbackErr) {
+          console.error('[svb] discardTab failed:', err, fallbackErr)
+          return null
+        }
+      }
     },
 
     async bookmarkTab({ title, url } = {}) {
@@ -6301,9 +7729,10 @@ function createTabsApi() {
       }
 
       async function createTreeFolder(node, parentId) {
+        const titleSuffix = node.isFolder ? '[Folder] ' : ''
         const folder = await promisifyChromeApi(bookmarksApi.create, {
           ...(parentId ? { parentId } : {}),
-          title: `${TREE_BOOKMARK_PREFIX}${node.title || 'Saved Tree'}`,
+          title: `${TREE_BOOKMARK_PREFIX}${titleSuffix}${node.title || 'Saved Tree'}`,
         })
         await promisifyChromeApi(bookmarksApi.create, {
           parentId: folder.id,
@@ -6347,6 +7776,7 @@ function createTabsApi() {
         const parsed = {
           title: parentBookmark.title || getTreeBookmarkTitle(folder.title) || parentBookmark.url,
           url: parentBookmark.url,
+          isFolder: !!(parentBookmark.url && parentBookmark.url.includes('#svb-folder:data=')),
           children: [],
         }
         let skippedParent = false
@@ -6367,6 +7797,7 @@ function createTabsApi() {
             parsed.children.push({
               title: child.title || child.url,
               url: child.url,
+              isFolder: !!(child.url && child.url.includes('#svb-folder:data=')),
               children: [],
             })
           }
@@ -6388,53 +7819,85 @@ function createTabsApi() {
     async moveTabsToNewWindow(tabIds) {
       const ids = Array.isArray(tabIds) ? tabIds.filter(Number.isFinite) : []
       if (ids.length === 0) return null
+      if (!windowsApi || typeof windowsApi.create !== 'function') return null
 
-      if (vivaldiBridge && typeof vivaldiBridge.detachTabsToNewWindow === 'function') {
+      // 1. Strip workspaceId from metadata on tabs so Vivaldi allows cross-window transfer
+      for (const id of ids) {
         try {
-          const detached = await vivaldiBridge.detachTabsToNewWindow(ids)
-          if (detached) return { native: true }
-        } catch (e) {
-          console.warn('[svb] vivaldiBridge.detachTabsToNewWindow failed:', e)
-        }
-      }
-
-      // Fallback for Vivaldi 8+ or if bridge fails
-      if (windowsApi && typeof windowsApi.create === 'function') {
-        try {
-          console.log('[svb] fallback: creating window with tab', ids[0])
-          // 1. Create new window with the first tab
-          const newWindow = await promisifyChromeApi(windowsApi.create, { tabId: ids[0] })
-          if (!newWindow || !newWindow.id) {
-             throw new Error('Failed to create new window')
-          }
-          
-          // 2. Wait a bit for the new window to be ready
-          await new Promise(resolve => setTimeout(resolve, 300))
-
-          // 3. Move remaining tabs one by one with a small delay between each
-          if (ids.length > 1) {
-            const children = ids.slice(1)
-            for (const childId of children) {
-              console.log('[svb] fallback: moving child', childId, 'to window', newWindow.id)
-              try {
-                // We use a small delay to prevent Vivaldi from dropping moves
-                await new Promise(resolve => setTimeout(resolve, 150))
-                await promisifyChromeApi(tabsApi.move, childId, {
-                  windowId: newWindow.id,
-                  index: -1
-                })
-              } catch (moveError) {
-                console.error(`[svb] failed to move child tab ${childId} to new window`, moveError)
-              }
+          const tab = await promisifyChromeApi(tabsApi.get, id)
+          if (tab && tab.vivExtData) {
+            const parsed = typeof tab.vivExtData === 'string' ? JSON.parse(tab.vivExtData) : { ...tab.vivExtData }
+            if (parsed && typeof parsed === 'object' && parsed.workspaceId != null) {
+              delete parsed.workspaceId
+              await promisifyChromeApi(tabsApi.update, id, { vivExtData: JSON.stringify(parsed) })
             }
           }
-          return { native: false, windowId: newWindow.id }
-        } catch (error) {
-          console.error('[svb] fallback move to new window failed', error)
-        }
+        } catch (_e) {}
       }
 
-      console.warn('[svb] native Vivaldi detachPage is unavailable; move to new window skipped')
+      // 2. Try moving live tabs to a new window (keeps video playing, webview state, history)
+      try {
+        const newWindow = await promisifyChromeApi(windowsApi.create, {})
+        if (newWindow && newWindow.id) {
+          const newWindowId = newWindow.id
+
+          // Move the existing live tabs into the new window
+          for (let i = 0; i < ids.length; i++) {
+            await new Promise(resolve => setTimeout(resolve, 80))
+            await promisifyChromeApi(tabsApi.move, ids[i], {
+              windowId: newWindowId,
+              index: -1,
+            })
+          }
+
+          // Close any default blank startpage tab created alongside the new window
+          try {
+            const newWinTabs = await promisifyChromeApi(tabsApi.query, { windowId: newWindowId })
+            const dummyTabs = newWinTabs.filter(t => !ids.includes(t.id))
+            if (dummyTabs.length > 0 && newWinTabs.length > dummyTabs.length) {
+              await promisifyChromeApi(tabsApi.remove, dummyTabs.map(t => t.id))
+            }
+          } catch (_err) {}
+
+          // Activate first moved tab
+          await promisifyChromeApi(tabsApi.update, ids[0], { active: true }).catch(() => {})
+
+          return { windowId: newWindowId }
+        }
+      } catch (liveMoveError) {
+        console.warn('[svb] live tab move failed, falling back to URL creation:', liveMoveError)
+      }
+
+      // 3. Fallback: recreate via URL if live move fails
+      try {
+        const tabObjects = await Promise.all(ids.map(id => promisifyChromeApi(tabsApi.get, id).catch(() => null)))
+        const validTabs = tabObjects.filter(tab => tab && typeof tab.url === 'string' && tab.url)
+        if (validTabs.length > 0) {
+          const firstTab = validTabs[0]
+          const newWindow = await promisifyChromeApi(windowsApi.create, {
+            url: firstTab.url,
+            incognito: !!firstTab.incognito
+          })
+          if (newWindow && newWindow.id) {
+            if (validTabs.length > 1) {
+              for (const childTab of validTabs.slice(1)) {
+                try {
+                  await promisifyChromeApi(tabsApi.create, {
+                    windowId: newWindow.id,
+                    url: childTab.url,
+                    vivExtData: serializeVivExtData(childTab.vivExtData),
+                  })
+                } catch (_err) {}
+              }
+            }
+            await promisifyChromeApi(tabsApi.remove, ids).catch(() => {})
+            return { windowId: newWindow.id }
+          }
+        }
+      } catch (fallbackError) {
+        console.error('[svb] fallback window creation failed:', fallbackError)
+      }
+
       return null
     },
 
@@ -6489,7 +7952,9 @@ function createTabsApi() {
 
     createTab(windowId, options = {}) {
       tabsApi.query({ windowId }, async tabs => {
-        const index = Array.isArray(tabs) ? tabs.length : undefined
+        const isTopMode = settingsStore.get('newTabPlacement') === 'top'
+        const pinnedCount = Array.isArray(tabs) ? tabs.filter(t => t.pinned).length : 0
+        const index = isTopMode ? pinnedCount : (Array.isArray(tabs) ? tabs.length : undefined)
         const createProperties = {
           windowId,
           active: true,
@@ -6559,6 +8024,14 @@ function createTabsApi() {
     onRemoved(listener) {
       tabsApi.onRemoved.addListener(listener)
       return () => tabsApi.onRemoved.removeListener(listener)
+    },
+
+    onReplaced(listener) {
+      if (tabsApi.onReplaced) {
+        tabsApi.onReplaced.addListener(listener)
+        return () => tabsApi.onReplaced.removeListener(listener)
+      }
+      return () => {}
     },
 
     onMoved(listener) {
@@ -6876,10 +8349,12 @@ function createThemeAdapter(root) {
   }
 
 
+  let observer = null
+
   function start() {
     apply()
 
-    const observer = new MutationObserver(() => {
+    observer = new MutationObserver(() => {
       apply()
     })
 
@@ -6889,7 +8364,14 @@ function createThemeAdapter(root) {
     })
   }
 
-  return { start, apply }
+  function dispose() {
+    if (observer) {
+      observer.disconnect()
+      observer = null
+    }
+  }
+
+  return { start, apply, dispose }
 }
 
 module.exports = { createThemeAdapter }
@@ -6902,10 +8384,12 @@ function createLayoutAdapter(options) {
   const { root, host, trigger, dragShield, panelStore } = options
   const MIN_WIDTH = 30
   const MAX_WIDTH = 520
+  const ICON_STRIP_WIDTH = 42
   let observer = null
   let resizeHandler = null
   let revealed = false
   let unlistenPanel = null
+  let unlistenSettings = null
   let currentPinned = panelStore.getState().pinned
   let currentWidth = panelStore.getState().width
   let dragState = null
@@ -6937,6 +8421,10 @@ function createLayoutAdapter(options) {
       || hasFullscreenClass(app)
   }
 
+  function isMenuOpen() {
+    return !!(root && (root.classList.contains('is-menu-open') || (root.querySelector && root.querySelector('.svb-menu'))))
+  }
+
   function apply() {
     if (!root || !trigger || !dragShield) return
 
@@ -6954,19 +8442,44 @@ function createLayoutAdapter(options) {
       currentHost.classList.add('svb-layout-host')
     }
 
+    const autoHideMode = settingsStore.get('autoHideMode') || 'full'
+    const isIconsMode = autoHideMode === 'icons' && !currentPinned
     const renderedWidth = getRenderedWidth()
+    const effectiveRevealed = revealed || isMenuOpen()
 
-    // Sync both variables immediately for smooth layout movement
-    if (currentHost.style.getPropertyValue('--svb-sidebar-width') !== `${renderedWidth}px`) {
-      currentHost.style.setProperty('--svb-sidebar-width', `${renderedWidth}px`)
+    currentHost.style.setProperty('--svb-rendered-width', `${renderedWidth}px`)
+
+    if (isIconsMode) {
+      // In icons mode when unpinned:
+      // Webview stays docked at 42px so web content is never obscured and doesn't jump on hover
+      if (currentHost.style.getPropertyValue('--svb-sidebar-width') !== `${ICON_STRIP_WIDTH}px`) {
+        currentHost.style.setProperty('--svb-sidebar-width', `${ICON_STRIP_WIDTH}px`)
+      }
+
+      const rootTargetWidth = effectiveRevealed ? renderedWidth : ICON_STRIP_WIDTH
+      if (root.style.width !== `${rootTargetWidth}px`) {
+        root.style.width = `${rootTargetWidth}px`
+      }
+
+      currentHost.classList.add('svb-mode-docked')
+      currentHost.classList.remove('svb-mode-overlay')
+      currentHost.classList.add('svb-autohide-icons')
+      root.classList.add('svb-autohide-icons')
+    } else {
+      if (currentHost.style.getPropertyValue('--svb-sidebar-width') !== `${renderedWidth}px`) {
+        currentHost.style.setProperty('--svb-sidebar-width', `${renderedWidth}px`)
+      }
+
+      if (root.style.width !== `${renderedWidth}px`) {
+        root.style.width = `${renderedWidth}px`
+      }
+
+      currentHost.classList.toggle('svb-mode-docked', currentPinned)
+      currentHost.classList.toggle('svb-mode-overlay', !currentPinned)
+      currentHost.classList.remove('svb-autohide-icons')
+      root.classList.remove('svb-autohide-icons')
     }
 
-    if (root.style.width !== `${renderedWidth}px`) {
-      root.style.width = `${renderedWidth}px`
-    }
-
-    currentHost.classList.toggle('svb-mode-docked', currentPinned)
-    currentHost.classList.toggle('svb-mode-overlay', !currentPinned)
     currentHost.classList.toggle('svb-is-fullscreen', fullscreen)
 
     const browser = document.querySelector('#browser')
@@ -6976,9 +8489,10 @@ function createLayoutAdapter(options) {
 
     const panelPosition = settingsStore.get('panelPosition')
     currentHost.classList.toggle('svb-position-right', panelPosition === 'right')
+    trigger.classList.toggle('svb-position-right', panelPosition === 'right')
 
-    root.classList.toggle('is-revealed', !fullscreen && (currentPinned || revealed))
-    trigger.classList.toggle('is-enabled', !fullscreen && !currentPinned)
+    root.classList.toggle('is-revealed', !fullscreen && (currentPinned || effectiveRevealed))
+    trigger.classList.toggle('is-enabled', !fullscreen && !currentPinned && !effectiveRevealed && !isIconsMode)
     dragShield.classList.toggle('is-active', !fullscreen && Boolean(dragState))
   }
 
@@ -6995,6 +8509,7 @@ function createLayoutAdapter(options) {
 
   function setRevealed(value) {
     if (currentPinned) return
+    if (!value && isMenuOpen()) return
     if (revealed === value) return
     revealed = value
     apply()
@@ -7072,12 +8587,24 @@ function createLayoutAdapter(options) {
     apply()
   }
 
+  let windowsApi = null
+  let updateWindowFullscreen = null
+  let rootMouseEnter = null
+  let rootMouseLeave = null
+  let rootPointerLeave = null
+  let hideOnExternalHover = null
+  let globalMouseMove = null
+  let globalMouseLeave = null
+  let clearRevealDelay = null
+  let triggerRevealWithDelay = null
+  let mouseMoveRaf = null
+
   function start() {
     fullscreen = detectFullscreen()
     apply()
 
-    const windowsApi = typeof chrome !== 'undefined' && chrome.windows ? chrome.windows : null
-    const updateWindowFullscreen = win => {
+    windowsApi = typeof chrome !== 'undefined' && chrome.windows ? chrome.windows : null
+    updateWindowFullscreen = win => {
       const nextWindowFullscreen = !!(win && win.state === 'fullscreen')
       if (windowFullscreen === nextWindowFullscreen) return
       windowFullscreen = nextWindowFullscreen
@@ -7112,10 +8639,133 @@ function createLayoutAdapter(options) {
     document.addEventListener('MSFullscreenChange', refreshFullscreen)
     window.addEventListener('resize', refreshFullscreen)
 
-    trigger.addEventListener('mouseenter', () => setRevealed(true))
-    root.addEventListener('mouseenter', () => setRevealed(true))
-    root.addEventListener('mouseleave', () => setRevealed(false))
+    let revealTimeout = null
+    const REVEAL_DELAY = 120 // Delay in ms before showing panel
+
+    clearRevealDelay = () => {
+      if (revealTimeout) {
+        clearTimeout(revealTimeout)
+        revealTimeout = null
+      }
+    }
+
+    triggerRevealWithDelay = () => {
+      if (revealed || currentPinned || fullscreen || dragState) return
+      if (!revealTimeout) {
+        revealTimeout = setTimeout(() => {
+          setRevealed(true)
+          revealTimeout = null
+        }, REVEAL_DELAY)
+      }
+    }
+
+    trigger.addEventListener('mouseenter', triggerRevealWithDelay)
+    trigger.addEventListener('mouseleave', clearRevealDelay)
+    
+    rootMouseEnter = () => {
+      const autoHideMode = settingsStore.get('autoHideMode') || 'full'
+      if (autoHideMode === 'icons' && !currentPinned) {
+        triggerRevealWithDelay()
+      } else {
+        clearRevealDelay()
+        setRevealed(true)
+      }
+    }
+    const isCursorAtScreenEdge = (e) => {
+      if (!e) return false;
+      const isRight = settingsStore.get('panelPosition') === 'right';
+      return !isRight ? (e.clientX <= 15) : (e.clientX >= window.innerWidth - 15);
+    }
+
+    rootMouseLeave = (e) => {
+      clearRevealDelay()
+      if (isMenuOpen()) return
+      if (e && e.relatedTarget && trigger.contains(e.relatedTarget)) return
+      if (isCursorAtScreenEdge(e)) return
+      setRevealed(false)
+    }
+    rootPointerLeave = (e) => {
+      clearRevealDelay()
+      if (isMenuOpen()) return
+      if (e && e.relatedTarget && trigger.contains(e.relatedTarget)) return
+      if (isCursorAtScreenEdge(e)) return
+      setRevealed(false)
+    }
+
+    root.addEventListener('mouseenter', rootMouseEnter)
+    root.addEventListener('mouseleave', rootMouseLeave)
+    root.addEventListener('pointerleave', rootPointerLeave)
     root.addEventListener('pointerdown', startDragging)
+
+    // Handle surface crossing where native webviews swallow pointer events and prevent mouseleave.
+    // Also handles dynamic webview container creation and moving the mouse out of the panel into other UI.
+    hideOnExternalHover = event => {
+      if (!revealed || currentPinned || fullscreen || dragState) return
+      if (isMenuOpen()) return
+
+      if (isCursorAtScreenEdge(event)) return
+
+      let targetElement = null;
+      if (event.type === 'mouseover' || event.type === 'pointerover') {
+        targetElement = event.target;
+      } else if (event.type === 'mouseout' || event.type === 'pointerout') {
+        targetElement = event.relatedTarget;
+      }
+
+      if (targetElement === null) {
+        setRevealed(false)
+        return
+      }
+
+      if (!root.contains(targetElement) && !trigger.contains(targetElement) && targetElement !== dragShield) {
+        setRevealed(false)
+      }
+    }
+
+    document.addEventListener('mouseover', hideOnExternalHover)
+    document.addEventListener('pointerover', hideOnExternalHover)
+    document.addEventListener('mouseout', hideOnExternalHover)
+    document.addEventListener('pointerout', hideOnExternalHover)
+
+    let latestMouseX = 0
+    let mouseMovePending = false
+
+    const performMouseMoveCheck = () => {
+      mouseMovePending = false
+      if (revealed || currentPinned || fullscreen || dragState) {
+        clearRevealDelay()
+        return
+      }
+      
+      const autoHideMode = settingsStore.get('autoHideMode') || 'full'
+      const isIconsMode = autoHideMode === 'icons' && !currentPinned
+      const panelPosition = settingsStore.get('panelPosition')
+      const isRight = panelPosition === 'right'
+      const threshold = isIconsMode ? ICON_STRIP_WIDTH : 15 // Check icon strip width in icons mode
+      
+      const inZone = !isRight ? (latestMouseX <= threshold) : (latestMouseX >= window.innerWidth - threshold)
+      
+      if (inZone) {
+        triggerRevealWithDelay()
+      } else {
+        clearRevealDelay()
+      }
+    }
+
+    globalMouseMove = event => {
+      latestMouseX = event.clientX
+      if (!mouseMovePending) {
+        mouseMovePending = true
+        mouseMoveRaf = window.requestAnimationFrame(performMouseMoveCheck)
+      }
+    }
+
+    globalMouseLeave = () => {
+      clearRevealDelay() // Mouse left the window completely, cancel reveal
+    }
+
+    document.addEventListener('mousemove', globalMouseMove)
+    document.addEventListener('mouseleave', globalMouseLeave)
 
     unlistenPanel = panelStore.subscribe(nextState => {
       currentPinned = nextState.pinned
@@ -7125,16 +8775,104 @@ function createLayoutAdapter(options) {
       }
       apply()
     })
+
+    unlistenSettings = settingsStore.subscribe(() => {
+      apply()
+    })
   }
 
-  return { apply, start }
+  function dispose() {
+    if (windowsApi && windowsApi.onBoundsChanged && typeof windowsApi.onBoundsChanged.removeListener === 'function') {
+      windowsApi.onBoundsChanged.removeListener(updateWindowFullscreen)
+    }
+    window.removeEventListener('resize', resizeHandler)
+    if (observer) observer.disconnect()
+    document.removeEventListener('fullscreenchange', refreshFullscreen)
+    document.removeEventListener('webkitfullscreenchange', refreshFullscreen)
+    document.removeEventListener('mozfullscreenchange', refreshFullscreen)
+    document.removeEventListener('MSFullscreenChange', refreshFullscreen)
+    window.removeEventListener('resize', refreshFullscreen)
+
+    trigger.removeEventListener('mouseenter', triggerRevealWithDelay)
+    trigger.removeEventListener('mouseleave', clearRevealDelay)
+    root.removeEventListener('mouseenter', rootMouseEnter)
+    root.removeEventListener('mouseleave', rootMouseLeave)
+    root.removeEventListener('pointerleave', rootPointerLeave)
+    root.removeEventListener('pointerdown', startDragging)
+
+    document.removeEventListener('mouseover', hideOnExternalHover)
+    document.removeEventListener('pointerover', hideOnExternalHover)
+    document.removeEventListener('mouseout', hideOnExternalHover)
+    document.removeEventListener('pointerout', hideOnExternalHover)
+    document.removeEventListener('mousemove', globalMouseMove)
+    document.removeEventListener('mouseleave', globalMouseLeave)
+
+    if (mouseMoveRaf) {
+      window.cancelAnimationFrame(mouseMoveRaf)
+      mouseMoveRaf = null
+    }
+
+    if (clearRevealDelay) clearRevealDelay()
+    if (unlistenPanel) unlistenPanel()
+    if (unlistenSettings) unlistenSettings()
+  }
+
+  return { apply, start, dispose }
 }
 
 module.exports = { createLayoutAdapter }
 
     },
+    "ui/pinned-grid.js": function(require, module, exports) {
+// Read the full-width layout, even while the shell is collapsed. Visibility
+// and translate do not affect these offsets or the space occupied by a row.
+function syncPinnedGrid(grid) {
+  const rows = new Map()
+  const entries = Array.from(grid.children, node => ({
+    node, left: node.offsetLeft, top: node.offsetTop,
+  }))
+  for (const entry of entries) {
+    let row = rows.get(entry.top)
+    if (!row) {
+      row = { left: entry.left, representative: entry.node }
+      rows.set(entry.top, row)
+    }
+    if (entry.node.classList.contains('is-active')) row.representative = entry.node
+  }
+  for (const { node, left, top } of entries) {
+    const row = rows.get(top)
+    node.dataset.stripVisible = String(node === row.representative)
+    node.style.setProperty('--svb-strip-offset', `${row.left - left}px`)
+  }
+}
+
+module.exports = { syncPinnedGrid }
+
+    },
     "ui/render.js": function(require, module, exports) {
 const { settingsStore } = require('../store/settings-store.js')
+const { syncPinnedGrid } = require('./pinned-grid.js')
+
+function getTabHoverTitle(tab, isActive) {
+  let title = tab.title || ''
+  const record = tab.vivExtData && typeof tab.vivExtData === 'object' && tab.vivExtData['svbTree']
+  if (record && record.createdAt) {
+    if (isActive) {
+      title += '\n\nOpened: Just now (Active)'
+    } else {
+      const ageMs = Date.now() - Number(record.createdAt)
+      const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24))
+      const ageHours = Math.floor((ageMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+      const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60))
+      title += '\n\nOpened: '
+      if (ageDays > 0) title += `${ageDays}d `
+      if (ageHours > 0) title += `${ageHours}h `
+      if (ageDays === 0 && ageHours === 0) title += `${ageMinutes}m `
+      title += 'ago'
+    }
+  }
+  return title
+}
 
 function escapeHtml(value) {
   return String(value)
@@ -7158,6 +8896,8 @@ const TAB_COLOR_SWATCHES = {
 
 function renderMenuIcon(name) {
   const paths = {
+    top: '<path d="M12 19V5"/><path d="m5 12 7-7 7 7"/><path d="M5 21h14"/>',
+    bottom: '<path d="M12 5v14"/><path d="m5 12 7 7 7-7"/><path d="M5 3h14"/>',
     restore: '<path d="M5 8a6 6 0 1 1 1.8 4.3"/><path d="M5 4v4h4"/>',
     child: '<path d="M5 5h6v6H5z"/><path d="M11 8h4a4 4 0 0 1 4 4v1"/><path d="M16 11l3 3 3-3"/>',
     move: '<path d="M5 12h14"/><path d="M15 8l4 4-4 4"/>',
@@ -7173,10 +8913,13 @@ function renderMenuIcon(name) {
     folder: '<path d="M4 7h6l2 2h8v9H4z"/><path d="M4 7v11"/>',
     color: '<path d="M12 4.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5Z"/><path d="M19 15.5a2 2 0 1 1-4 0c0-1.4 2-3.8 2-3.8s2 2.4 2 3.8Z"/><path d="M8.5 18a1.5 1.5 0 1 1-3 0c0-1 1.5-2.9 1.5-2.9S8.5 17 8.5 18Z"/>',
     chevron: '<path d="m9 6 6 6-6 6"/>',
-    reload: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v6h-6"/>',
-    copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/>',
-    sleep: '<path d="M20 14.5A8 8 0 1 1 9.5 4 6.5 6.5 0 0 0 20 14.5Z"/>',
     settings: '<path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"/>',
+    reload: '<path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/>',
+    sleep: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+    copy: '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>',
+    link: '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+    type: '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" x2="15" y1="20" y2="20"/><line x1="12" x2="12" y1="4" y2="20"/>',
+    code: '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
   }
   return `<svg class="svb-menu__icon" viewBox="0 0 24 24" aria-hidden="true">${paths[name] || paths.workspace}</svg>`
 }
@@ -7217,9 +8960,10 @@ function getWorkspaceBarEntries(state) {
   return entries
 }
 
-// Workspace switcher, modeled on Vivaldi's own workspace popup: a row of
-// icon buttons that wraps to the panel width, with a full-width title line
-// underneath naming the active workspace (or the one under the pointer).
+// Workspace switcher, modeled on Vivaldi's own workspace popup: a single
+// horizontally scrolling row of icon buttons (the "+" stays pinned at the
+// end), with a full-width title line underneath naming the active workspace
+// (or the one under the pointer).
 // Hidden when there are no workspaces, so single-workspace users see no
 // extra chrome.
 function renderWorkspaceBar(state, creating, renamingId) {
@@ -7230,7 +8974,7 @@ function renderWorkspaceBar(state, creating, renamingId) {
   const active = entries.find(entry => entry.isActive) || null
 
   const buttons = entries.map(entry => `<button class="svb-workspace${entry.isActive ? ' is-active' : ''}" data-role="switch-workspace" data-workspace-id="${entry.id}" data-workspace-name="${escapeHtml(entry.name)}" title="${escapeHtml(entry.name)}" aria-label="${escapeHtml(entry.name)}">${renderWorkspaceIcon(entry.icon, entry.fallback)}</button>`)
-  buttons.push(`<button class="svb-workspace svb-workspace--add" data-role="create-workspace" data-workspace-name="New workspace" title="New workspace" aria-label="New workspace">${renderMenuIcon('add')}</button>`)
+  const addButton = `<button class="svb-workspace svb-workspace--add" data-role="create-workspace" data-workspace-name="New workspace" title="New workspace" aria-label="New workspace">${renderMenuIcon('add')}</button>`
 
   // While naming/renaming, the title line becomes the input so the field is
   // full-width and never scrolls the panel.
@@ -7247,7 +8991,7 @@ function renderWorkspaceBar(state, creating, renamingId) {
     titleLine = `<div class="svb-workspaces__title" data-active-name="${escapeHtml(activeName)}">${escapeHtml(activeName)}</div>`
   }
 
-  return `<div class="svb-workspaces__icons">${buttons.join('')}</div>${titleLine}`
+  return `<div class="svb-workspaces__row"><div class="svb-workspaces__icons">${buttons.join('')}</div>${addButton}</div>${titleLine}`
 }
 
 function workspaceBarSignature(state, creating, renamingId) {
@@ -7364,8 +9108,12 @@ function renderContextMenu(tab, state, contextMenu) {
   if (!contextMenu || !tab) return ''
   const selectedIds = Array.isArray(state.selectedIds) ? state.selectedIds : []
   const selectedCount = selectedIds.includes(tab.id) ? selectedIds.length : 1
+  const isFolder = tab && tab.vivExtData && tab.vivExtData.isFolder
+  const isPinnedFolder = isFolder && tab.vivExtData.pinnedFolder
   const closeLabel = selectedCount > 1 ? 'Close Selected Tabs' : 'Close Tab'
-  const pinLabel = tab.pinned ? 'Unpin Tab' : 'Pin Tab'
+  const pinLabel = isFolder 
+    ? (isPinnedFolder ? 'Unpin Folder' : 'Pin Folder')
+    : (tab.pinned ? 'Unpin Tab' : 'Pin Tab')
   const muteLabel = tab.muted ? 'Unmute Tab' : 'Mute Tab'
   const currentColorKey = selectedCount === 1
     && tab.vivExtData
@@ -7386,7 +9134,11 @@ function renderContextMenu(tab, state, contextMenu) {
     workspaceId: Number(workspace.id),
   })).join('')
 
+  const isTopMode = (settingsStore.get('newTabPlacement') || 'bottom') === 'top'
   const moveSubmenu = `
+    ${renderContextMenuItem({ action: 'move-top', icon: 'top', label: selectedCount > 1 ? `Move ${selectedCount} Tabs to Top` : 'Top of Tree', disabled: isPinned })}
+    ${renderContextMenuItem({ action: 'move-bottom', icon: 'bottom', label: selectedCount > 1 ? `Move ${selectedCount} Tabs to Bottom` : 'Bottom of Tree', disabled: isPinned })}
+    <div class="svb-menu__separator"></div>
     ${renderContextMenuItem({ action: 'move-window', icon: 'window', label: 'New Window' })}
     <div class="svb-menu__separator"></div>
     ${workspaceItems || '<div class="svb-menu__empty">No Workspaces</div>'}
@@ -7408,12 +9160,18 @@ function renderContextMenu(tab, state, contextMenu) {
   const savedTreeSubmenu = savedTrees.map(renderSavedTreeMenuItem).join('')
   const copyLabelSuffix = selectedCount > 1 ? ` (${selectedCount})` : ''
   const copySubmenu = `
-    ${renderContextMenuItem({ action: 'copy-url', icon: 'copy', label: `Copy URL${copyLabelSuffix}` })}
-    ${renderContextMenuItem({ action: 'copy-title', icon: 'copy', label: `Copy Title${copyLabelSuffix}` })}
-    ${renderContextMenuItem({ action: 'copy-markdown', icon: 'copy', label: `Copy as Markdown Link${copyLabelSuffix}` })}
+    ${renderContextMenuItem({ action: 'copy-url', icon: 'link', label: `Copy URL${copyLabelSuffix}` })}
+    ${renderContextMenuItem({ action: 'copy-title', icon: 'type', label: `Copy Title${copyLabelSuffix}` })}
+    ${renderContextMenuItem({ action: 'copy-markdown', icon: 'code', label: `Copy as Markdown Link${copyLabelSuffix}` })}
   `
   const menuX = Math.max(4, contextMenu.x)
   const menuY = Math.max(4, contextMenu.y)
+
+  const folderMenu = `
+    ${renderContextMenuItem({ action: 'new-folder-child', icon: 'child', label: 'New Child Folder', disabled: isPinned })}
+    ${renderContextMenuItem({ action: 'new-folder-sibling', icon: 'add', label: 'New Sibling Folder', disabled: isPinned })}
+    ${renderContextMenuItem({ action: 'new-folder-above', icon: 'add', label: 'New Folder Above', disabled: isPinned })}
+  `
 
   return `
     <div
@@ -7426,12 +9184,21 @@ function renderContextMenu(tab, state, contextMenu) {
       ${renderContextMenuItem({ action: 'restore-closed', icon: 'restore', label: 'Reopen Last Closed Tab' })}
       ${renderContextMenuItem({ action: 'new-child', icon: 'child', label: 'New Child Tab', disabled: isPinned })}
       ${renderContextMenuItem({ action: 'new-sibling', icon: 'add', label: 'New Sibling Tab Below', disabled: isPinned })}
+      ${renderContextMenuItem({ icon: 'folder', label: 'New Folder...', submenu: folderMenu, disabled: isPinned })}
       ${renderContextMenuItem({ icon: 'copy', label: 'Copy', submenu: copySubmenu })}
       <div class="svb-menu__separator"></div>
       ${renderContextMenuItem({ action: 'bookmark-tab', icon: 'bookmark', label: 'Bookmark Tab' })}
       ${renderContextMenuItem({ action: 'save-tree-bookmark', icon: 'bookmark', label: 'Save Tree as Bookmark', disabled: isPinned || !hasChildren })}
       ${renderContextMenuItem({ icon: 'folder', label: 'Open Saved Tree', submenu: savedTreeSubmenu || '<div class="svb-menu__empty">No Saved Trees</div>' })}
       <div class="svb-menu__separator"></div>
+      ${renderContextMenuItem({
+        action: isTopMode ? 'move-top' : 'move-bottom',
+        icon: isTopMode ? 'top' : 'bottom',
+        label: isTopMode
+          ? (selectedCount > 1 ? `Move ${selectedCount} Tabs to Top` : 'Move to Top')
+          : (selectedCount > 1 ? `Move ${selectedCount} Tabs to Bottom` : 'Move to Bottom'),
+        disabled: isPinned,
+      })}
       ${renderContextMenuItem({ icon: 'move', label: 'Move to', submenu: moveSubmenu })}
       <div class="svb-menu__separator"></div>
       ${renderContextMenuItem({ action: 'toggle-pin', icon: 'pin', label: pinLabel })}
@@ -7469,7 +9236,7 @@ function renderExpander(item) {
 function renderChildCount(item) {
   const branchCount = item && item.subtreeSize ? Math.max(0, item.subtreeSize - 1) : 0
   if (!item || !item.hasChildren || !item.collapsed || !branchCount) return ''
-  return `<span class="svb-tab__child-count" aria-hidden="true">${branchCount}</span>`
+  return `<span class="svb-tab__child-count" data-role="toggle-collapse" data-tab-id="${item.id}" aria-hidden="true" style="cursor:pointer;" title="Click to expand">${branchCount}</span>`
 }
 
 function renderDropIndicator(dropPosition) {
@@ -7522,6 +9289,37 @@ function syncOptionalDirectChild(parent, selector, html, insertBeforeNode = null
 
 function syncTabLeadIcon(lead, tab) {
   const current = Array.from(lead.children).find(child => child.matches('.svb-tab__spinner, .svb-tab__favicon'))
+    
+  if (tab.vivExtData && tab.vivExtData.isFolder) {
+    let actualColorKey = tab.vivExtData.tabColor || tab.vivExtData.folderColor
+    const folderColor = actualColorKey && TAB_COLOR_SWATCHES[actualColorKey]
+      ? TAB_COLOR_SWATCHES[actualColorKey]
+      : 'currentColor'
+    const isPinnedFolder = !!tab.vivExtData.pinnedFolder
+    const pinBadge = isPinnedFolder
+      ? `<span class="svb-tab__pinned-badge" title="Pinned Folder"><svg class="svb-small-pin-icon" viewBox="0 0 16 16" width="9" height="9" fill="currentColor"><path d="M4.5 1.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H10v3.25l1.854 2.78a.5.5 0 0 1-.416.72h-2.938v5.25a.5.5 0 0 1-1 0V8.75H4.562a.5.5 0 0 1-.416-.72L6 5.25V2h-1a.5.5 0 0 1-.5-.5z"/></svg></span>`
+      : ''
+
+    const hasBadge = !!(current && current.querySelector('.svb-tab__pinned-badge'))
+
+    if (current && current.matches('.svb-tab__favicon.is-folder') && hasBadge === isPinnedFolder) {
+      current.style.color = folderColor
+      return current
+    }
+
+    const folderIcon = createNodeFromHtml(`
+      <span class="svb-tab__favicon is-folder" style="color: ${folderColor};">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+        </svg>
+        ${pinBadge}
+      </span>
+    `)
+    if (current) current.replaceWith(folderIcon)
+    else lead.appendChild(folderIcon)
+    return folderIcon
+  }
+
   if (tab.loading) {
     if (current && current.matches('.svb-tab__spinner')) return current
 
@@ -7576,7 +9374,7 @@ function renderTabBadge(tab) {
   return ''
 }
 
-function syncTabContent(content, tab, editing) {
+function syncTabContent(content, tab, editing, item) {
   if (editing) {
     let input = findDirectChild(content, '.svb-tab__title-input')
     if (!input) {
@@ -7602,8 +9400,11 @@ function syncTabContent(content, tab, editing) {
     content.innerHTML = '<span class="svb-tab__title"></span>'
     titleNode = findDirectChild(content, '.svb-tab__title')
   }
-  if (titleNode && titleNode.textContent !== tab.title) {
-    titleNode.textContent = tab.title
+  
+  let displayTitle = tab.title
+
+  if (titleNode && titleNode.textContent !== displayTitle) {
+    titleNode.textContent = displayTitle
   }
 
   syncOptionalDirectChild(content, '.svb-tab__badge', renderTabBadge(tab), null)
@@ -7613,9 +9414,7 @@ function getTabVisualStyle(tab) {
   const styles = []
   const tiling = tab && tab.vivExtData && tab.vivExtData.tiling
   const tileId = tiling && tiling.id ? String(tiling.id) : ''
-  const tabColorKey = tab && tab.vivExtData && typeof tab.vivExtData.tabColor === 'string'
-    ? tab.vivExtData.tabColor
-    : ''
+  const tabColorKey = tab && tab.vivExtData && (typeof tab.vivExtData.tabColor === 'string' ? tab.vivExtData.tabColor : (typeof tab.vivExtData.folderColor === 'string' ? tab.vivExtData.folderColor : ''))
   const tabColor = tabColorKey && TAB_COLOR_SWATCHES[tabColorKey] ? TAB_COLOR_SWATCHES[tabColorKey] : ''
 
   if (tabColor) {
@@ -7673,11 +9472,31 @@ function getTabVisualState(tabId, item, visualState) {
 }
 
 function renderTab(tab, compact, canClose, item, editing, visualState) {
-  const icon = tab.loading
-    ? `<span class="svb-tab__spinner" aria-hidden="true"></span>`
-    : tab.favIconUrl
-      ? `<img class="svb-tab__favicon" src="${escapeHtml(tab.favIconUrl)}" alt="">`
-      : `<span class="svb-tab__favicon svb-tab__favicon--fallback"></span>`
+  let icon = ''
+  if (tab.vivExtData && tab.vivExtData.isFolder) {
+    let actualColorKey = tab.vivExtData.tabColor || tab.vivExtData.folderColor
+    const folderColor = actualColorKey && TAB_COLOR_SWATCHES[actualColorKey]
+      ? TAB_COLOR_SWATCHES[actualColorKey]
+      : 'currentColor'
+    const isPinnedFolder = !!tab.vivExtData.pinnedFolder
+    const pinBadge = isPinnedFolder
+      ? `<span class="svb-tab__pinned-badge" title="Pinned Folder"><svg class="svb-small-pin-icon" viewBox="0 0 16 16" width="9" height="9" fill="currentColor"><path d="M4.5 1.5a.5.5 0 0 1 .5-.5h6a.5.5 0 0 1 0 1H10v3.25l1.854 2.78a.5.5 0 0 1-.416.72h-2.938v5.25a.5.5 0 0 1-1 0V8.75H4.562a.5.5 0 0 1-.416-.72L6 5.25V2h-1a.5.5 0 0 1-.5-.5z"/></svg></span>`
+      : ''
+    icon = `
+      <span class="svb-tab__favicon is-folder" style="color: ${folderColor};">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/>
+        </svg>
+        ${pinBadge}
+      </span>
+    `
+  } else {
+    icon = tab.loading
+      ? `<span class="svb-tab__spinner" aria-hidden="true"></span>`
+      : tab.favIconUrl
+        ? `<img class="svb-tab__favicon" src="${escapeHtml(tab.favIconUrl)}" alt="">`
+        : `<span class="svb-tab__favicon svb-tab__favicon--fallback"></span>`
+  }
 
   const media = renderTabBadge(tab)
 
@@ -7688,28 +9507,33 @@ function renderTab(tab, compact, canClose, item, editing, visualState) {
   const tiling = tab.vivExtData && tab.vivExtData.tiling
   const isTiled = !!(tiling && (tiling.id || tiling.layout))
   const tiledClass = isTiled ? ' is-tiled' : ''
+  const folderClass = tab.vivExtData && tab.vivExtData.isFolder ? ' is-folder' : ''
+  const collapsedClass = item && item.collapsed ? ' is-collapsed' : ''
   const tabClass = compact
-    ? `svb-tab svb-pinned-tab is-compact${discardedClass}${tiledClass}`
-    : `svb-tab${discardedClass}${tiledClass}${hasClose ? ' has-close' : ''}${hasAdd ? ' has-add' : ''}${rowVisualState.isSelected ? ' is-selected' : ''}${rowVisualState.isDragging ? ' is-dragging' : ''}${rowVisualState.isDropTarget ? ' is-drop-target' : ''}`
+    ? `svb-tab svb-pinned-tab is-compact${folderClass}${discardedClass}${tiledClass}`
+    : `svb-tab${folderClass}${discardedClass}${tiledClass}${hasClose ? ' has-close' : ''}${hasAdd ? ' has-add' : ''}${rowVisualState.isSelected ? ' is-selected' : ''}${rowVisualState.isDragging ? ' is-dragging' : ''}${rowVisualState.isDropTarget ? ' is-drop-target' : ''}${collapsedClass}`
   const depth = item && !compact ? item.depth : 0
   const visibleIndex = item && !compact ? item.visibleIndex : -1
   const subtreeSize = item && !compact ? item.subtreeSize : 1
-  const parentId = item && !compact && item.parentId != null ? item.parentId : ''
+  const parentId = item && !compact && item.parentId != null ? item.parentId : -1
   const ancestorIds = item && !compact && Array.isArray(item.ancestorIds) ? item.ancestorIds.join(',') : ''
   const dropPosition = item && !compact && rowVisualState.dropPosition ? rowVisualState.dropPosition : ''
   const hasChildren = !!(item && item.hasChildren)
   const isCollapsed = !!(item && item.collapsed)
   const visibleBranchSize = item && !compact ? item.visibleBranchSize || 1 : 1
-  const coloredClass = tab.vivExtData && tab.vivExtData.tabColor && TAB_COLOR_SWATCHES[tab.vivExtData.tabColor]
-    ? ' is-colored'
-    : ''
+  const colorKey = tab.vivExtData && (tab.vivExtData.tabColor || tab.vivExtData.folderColor)
+  const coloredClass = colorKey && TAB_COLOR_SWATCHES[colorKey] ? ' is-colored' : ''
   const visualStyle = (tiledClass || coloredClass) ? getTabVisualStyle(tab) : ''
   const title = editing
     ? `<input class="svb-tab__title-input" data-role="rename-input" data-tab-id="${tab.id}" value="${escapeHtml(tab.title)}" spellcheck="false">`
     : `<span class="svb-tab__title">${escapeHtml(tab.title)}</span>`
 
+  const record = tab.vivExtData && typeof tab.vivExtData === 'object' && tab.vivExtData['svbTree']
+  const createdAtAttr = record && record.createdAt ? ` data-created-at="${record.createdAt}"` : ''
+  const baseTitleAttr = ` data-base-title="${escapeHtml(tab.title || '')}"`
+
   return `
-    <button class="${tabClass}${coloredClass}${rowVisualState.isActive ? ' is-active' : ''}" data-role="activate-tab" data-tab-id="${tab.id}" data-visible-index="${visibleIndex}" data-depth="${depth}" data-parent-id="${parentId}" data-subtree-size="${subtreeSize}" data-ancestor-ids="${escapeHtml(ancestorIds)}" data-drop-position="${dropPosition}" data-parent="${hasChildren}" data-folded="${isCollapsed}" title="${escapeHtml(tab.title)}"${visualStyle ? ` style="${visualStyle}"` : ''}>
+    <button class="${tabClass}${coloredClass}${rowVisualState.isActive ? ' is-active' : ''}" data-role="activate-tab" data-tab-id="${tab.id}" data-visible-index="${visibleIndex}" data-depth="${depth}" data-parent-id="${parentId}" data-subtree-size="${subtreeSize}" data-ancestor-ids="${escapeHtml(ancestorIds)}" data-drop-position="${dropPosition}" data-parent="${hasChildren}" data-folded="${isCollapsed}" title="${escapeHtml(getTabHoverTitle(tab, rowVisualState.isActive))}"${createdAtAttr}${baseTitleAttr}${visualStyle ? ` style="${visualStyle}"` : ''}>
       <span class="svb-tab__outer" style="--svb-depth:${depth};--svb-visible-branch-size:${visibleBranchSize}">
         ${compact ? '' : renderTreeGuides(item)}
         <span class="svb-tab__body">
@@ -7735,14 +9559,25 @@ function renderTab(tab, compact, canClose, item, editing, visualState) {
 
 function renderNewTabButton(inline) {
   return `
-    <button
-      class="svb-new-tab-button${inline ? ' is-inline' : ' is-sticky'}"
-      data-role="create-tab"
-      title="New tab"
-    >
-      <span class="svb-new-tab-button__icon">+</span>
-      <span class="svb-new-tab-button__label">New Tab</span>
-    </button>
+    <div class="svb-new-item-buttons${inline ? ' is-inline' : ' is-sticky'}">
+      <button
+        class="svb-new-tab-button"
+        data-role="create-tab"
+        title="New tab"
+      >
+        <span class="svb-new-tab-button__icon">+</span>
+        <span class="svb-new-tab-button__label">New Tab</span>
+      </button>
+      <button
+        class="svb-new-folder-button"
+        data-role="create-folder"
+        title="New Folder"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
+          <path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2zm5 9h-3v3h-2v-3H7v-2h3V8h2v3h3v2z"/>
+        </svg>
+      </button>
+    </div>
   `
 }
 
@@ -7774,22 +9609,50 @@ function createNodeFromHtml(html) {
 }
 
 function createSidebarRenderer(options) {
-  const { root, dragShield, onActivateTab, onCloseTab, onCreateTab, onCreateChildTab, onRenameTab, onTogglePinned, onSwitchWorkspace, onCreateWorkspace, onRenameWorkspace, onToggleMute, onToggleCollapse, onCollapseAll, onSelectTab, onOpenContextMenu, onContextMenuAction, onStartDrag, onUpdateDropTarget, onCommitDrop, onCommitExternalDrop, onCommitExternalContentDrop, onClearDrag } = options
+  const {
+    root,
+    dragShield,
+    onActivateTab,
+    onCloseTab,
+    onCreateTab,
+    onCreateFolderTab,
+    onCreateChildTab,
+    onRenameTab,
+    onTogglePinned,
+    onSwitchWorkspace,
+    onCreateWorkspace,
+    onRenameWorkspace,
+    onToggleMute,
+    onToggleCollapse,
+    onCollapseAll,
+    onSelectTab,
+    onOpenContextMenu,
+    onContextMenuAction,
+    onStartDrag,
+    onUpdateDropTarget,
+    onCommitDrop,
+    onCommitExternalDrop,
+    onCommitExternalContentDrop,
+    onClearDrag
+  } = options
   let pendingScrollToActive = false
   let pendingScrollSourceTabId = null
   let currentVisibleIds = []
   let previousActiveTabId = null
   let previousPinnedTabsSnapshot = null
   let previousTreeTabsSnapshot = null
+  let previousPinnedFolderIds = new Set()
   let previousCanCloseVisibleTabs = null
   let previousPanelPinned = null
   let previousIsSettingsOpen = false
   let previousCreatingWorkspace = false
+  let previousNewTabPlacement = null
   let previousSelectedIds = []
   let previousDraggedIds = []
   let previousDropTargetId = null
   let previousDropPosition = null
   const tabNodesByKey = new Map()
+  const pinnedFolderGroupsById = new Map()
   const enteringNodes = new WeakSet()
   const pendingEnterNodes = new Set()
   let pointerDrag = null
@@ -7800,6 +9663,8 @@ function createSidebarRenderer(options) {
   let latestState = null
   let renderCurrent = () => {}
   let shell = null
+  let pinnedGridObserver = null
+  let workspaceBarObserver = null
   let editingTabId = null
   let isSettingsOpen = false
   let creatingWorkspace = false
@@ -7870,12 +9735,10 @@ function createSidebarRenderer(options) {
         <div class="svb-main-view">
           <div class="svb-workspaces" style="display:none"></div>
           <section class="svb-section svb-section--pinned">
-            <div class="svb-section__label">Pinned</div>
             <div class="svb-pinned-grid"></div>
           </section>
 
           <section class="svb-section svb-section--fill">
-            <div class="svb-section__label">Tabs</div>
             <div class="svb-tab-list"></div>
             <div class="svb-footer"></div>
           </section>
@@ -7890,6 +9753,10 @@ function createSidebarRenderer(options) {
             <h2 class="svb-settings-title">Settings</h2>
           </div>
           <div class="svb-settings-content">
+            <div class="svb-settings-group">
+              <div class="svb-settings-label">Діагностика</div>
+              <button type="button" data-role="activation-trace" title="Відкрити журнал активації вкладок">Журнал</button>
+            </div>
             <div class="svb-settings-group">
               <label class="svb-settings-label">New child tab position</label>
               <div class="svb-settings-options">
@@ -7951,6 +9818,61 @@ function createSidebarRenderer(options) {
                 </label>
               </div>
             </div>
+            <div class="svb-settings-group">
+              <label class="svb-settings-label">Auto-hide mode</label>
+              <div class="svb-settings-options">
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoHideMode" value="full">
+                  <span>Full auto-hide</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoHideMode" value="icons">
+                  <span>Icon strip</span>
+                </label>
+              </div>
+            </div>
+            <div class="svb-settings-group">
+              <label class="svb-settings-label">New tab & folder position</label>
+              <div class="svb-settings-options">
+                <label class="svb-settings-option">
+                  <input type="radio" name="newTabPlacement" value="bottom">
+                  <span>Bottom of list</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="newTabPlacement" value="top">
+                  <span>Top of list</span>
+                </label>
+              </div>
+            </div>
+            <div class="svb-settings-group">
+              <label class="svb-settings-label">Auto-close old tabs & trees</label>
+              <div class="svb-settings-options">
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoCloseTabsDays" value="0">
+                  <span>Never</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoCloseTabsDays" value="1">
+                  <span>1 day</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoCloseTabsDays" value="7">
+                  <span>1 week</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoCloseTabsDays" value="14">
+                  <span>2 weeks</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoCloseTabsDays" value="21">
+                  <span>3 weeks</span>
+                </label>
+                <label class="svb-settings-option">
+                  <input type="radio" name="autoCloseTabsDays" value="30">
+                  <span>1 month</span>
+                </label>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -7979,6 +9901,35 @@ function createSidebarRenderer(options) {
     }
 
     shell.footer.appendChild(createNodeFromHtml(renderNewTabButton(false)))
+
+    if (pinnedGridObserver) pinnedGridObserver.disconnect()
+    pinnedGridObserver = new ResizeObserver(() => syncPinnedGrid(shell.pinnedGrid))
+    pinnedGridObserver.observe(shell.pinnedGrid)
+
+    // Workspace row: a vertical wheel scrolls it horizontally (like a tab
+    // strip); edge fades follow scroll position and panel width.
+    if (workspaceBarObserver) workspaceBarObserver.disconnect()
+    workspaceBarObserver = new ResizeObserver(() => {
+      const scroller = shell.workspaceBar.querySelector('.svb-workspaces__icons')
+      if (scroller) syncWorkspaceScrollEdges(scroller)
+    })
+    workspaceBarObserver.observe(shell.workspaceBar)
+    shell.workspaceBar.addEventListener('wheel', event => {
+      const scroller = event.target.closest('.svb-workspaces__icons')
+      if (!scroller || scroller.scrollWidth <= scroller.clientWidth) return
+      const delta = Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY
+      if (!delta) return
+      event.preventDefault()
+      const unit = event.deltaMode === 1 ? 16 : event.deltaMode === 2 ? scroller.clientWidth : 1
+      // Mouse-wheel notches glide; trackpad deltas are already fine-grained.
+      const isNotch = event.deltaMode !== 0 || Math.abs(delta) >= 50
+      scroller.scrollBy({ left: delta * unit, behavior: isNotch ? 'smooth' : 'auto' })
+    }, { ...eventOptions, passive: false })
+    shell.workspaceBar.addEventListener('scroll', event => {
+      if (event.target instanceof Element && event.target.classList.contains('svb-workspaces__icons')) {
+        syncWorkspaceScrollEdges(event.target)
+      }
+    }, { ...eventOptions, capture: true })
 
     // Setup native drag-and-drop for external content
     shell.frame.addEventListener('dragover', event => {
@@ -8149,6 +10100,29 @@ function createSidebarRenderer(options) {
     return changedIds
   }
 
+  // Signature-gated, so it is cheap to call on every render.
+  function syncWorkspaceBar(currentShell, state) {
+    if (!currentShell.workspaceBar) return
+    const signature = workspaceBarSignature(state, creatingWorkspace, renamingWorkspaceId)
+    currentShell.workspaceBar.style.display = signature ? '' : 'none'
+    if (currentShell.workspaceBar.dataset.sig !== signature) {
+      const previousScroller = currentShell.workspaceBar.querySelector('.svb-workspaces__icons')
+      const previousScrollLeft = previousScroller ? previousScroller.scrollLeft : 0
+      currentShell.workspaceBar.innerHTML = signature ? renderWorkspaceBar(state, creatingWorkspace, renamingWorkspaceId) : ''
+      currentShell.workspaceBar.dataset.sig = signature
+      const scroller = currentShell.workspaceBar.querySelector('.svb-workspaces__icons')
+      if (scroller) {
+        scroller.scrollLeft = previousScrollLeft
+        revealActiveWorkspace(scroller)
+        syncWorkspaceScrollEdges(scroller)
+      }
+      if (creatingWorkspace || renamingWorkspaceId != null) {
+        const input = currentShell.workspaceBar.querySelector('[data-role="workspace-name-input"]')
+        if (input) { input.focus({ preventScroll: true }); input.select() }
+      }
+    }
+  }
+
   function updateShellControls(currentShell, state, treeTabs) {
     const totalTabs = state.pinnedTabs.length + state.tabs.length
     currentShell.count.textContent = String(totalTabs)
@@ -8160,21 +10134,11 @@ function createSidebarRenderer(options) {
     currentShell.pinButton.title = state.panelPinned ? 'Unpin panel' : 'Pin panel'
     currentShell.pinButton.innerHTML = renderPinIcon(state.panelPinned)
     currentShell.settingsButton.innerHTML = renderMenuIcon('settings')
-    currentShell.pinnedSection.style.display = state.pinnedTabs.length ? '' : 'none'
 
-    if (currentShell.workspaceBar) {
-      const signature = workspaceBarSignature(state, creatingWorkspace, renamingWorkspaceId)
-      currentShell.workspaceBar.style.display = signature ? '' : 'none'
-      if (currentShell.workspaceBar.dataset.sig !== signature) {
-        currentShell.workspaceBar.innerHTML = signature ? renderWorkspaceBar(state, creatingWorkspace, renamingWorkspaceId) : ''
-        currentShell.workspaceBar.dataset.sig = signature
-        if (creatingWorkspace || renamingWorkspaceId != null) {
-          const input = currentShell.workspaceBar.querySelector('[data-role="workspace-name-input"]')
-          if (input) { input.focus({ preventScroll: true }); input.select() }
-        }
-      }
-    }
+    syncWorkspaceBar(currentShell, state)
 
+    const isTopMode = (settingsStore.get('newTabPlacement') || 'bottom') === 'top'
+    currentShell.frame.classList.toggle('is-top-mode', isTopMode)
     currentShell.mainView.style.display = isSettingsOpen ? 'none' : 'flex'
     currentShell.settingsView.style.display = isSettingsOpen ? 'flex' : 'none'
 
@@ -8186,7 +10150,7 @@ function createSidebarRenderer(options) {
           if (input.type === 'checkbox') {
             input.checked = !!settings[input.name]
           } else {
-            input.checked = settings[input.name] === input.value
+            input.checked = String(settings[input.name]) === input.value
           }
         }
       }
@@ -8221,10 +10185,13 @@ function createSidebarRenderer(options) {
     }
 
     // Render if empty OR if requested for a different tab
+    // Render if empty, if requested for a different tab, or if workspaces changed
     const existingMenu = currentShell.menuHost.querySelector('.svb-menu')
     const renderedTabId = existingMenu ? Number(existingMenu.getAttribute('data-tab-id')) : null
+    const renderedWorkspaces = existingMenu ? existingMenu.getAttribute('data-workspaces') : null
+    const currentWorkspaces = (Array.isArray(state.workspaces) ? state.workspaces : []).map(w => w.id).join(',')
 
-    if (!existingMenu || renderedTabId !== contextMenu.tabId) {
+    if (!existingMenu || renderedTabId !== contextMenu.tabId || renderedWorkspaces !== currentWorkspaces) {
       const allTabsById = new Map(state.pinnedTabs.concat(state.tabs).map(tab => [tab.id, tab]))
       const contextTab = allTabsById.get(contextMenu.tabId) || null
       if (!contextTab) return
@@ -8234,6 +10201,7 @@ function createSidebarRenderer(options) {
 
       const menuNode = currentShell.menuHost.querySelector('.svb-menu')
       if (menuNode) {
+        menuNode.setAttribute('data-workspaces', currentWorkspaces)
         void menuNode.offsetWidth
         menuNode.classList.add('is-visible')
       }
@@ -8295,6 +10263,8 @@ function createSidebarRenderer(options) {
       || previousCreatingWorkspace !== creatingWorkspace
     ) {
       updateShellControls(currentShell, state, treeTabs)
+    } else {
+      syncWorkspaceBar(currentShell, state)
     }
 
     updateContextMenu(currentShell, state)
@@ -8309,9 +10279,11 @@ function createSidebarRenderer(options) {
     const tiling = tab.vivExtData && tab.vivExtData.tiling
     const isTiled = !!(tiling && (tiling.id || tiling.layout))
     const tiledClass = isTiled ? ' is-tiled' : ''
+    const isFolder = tab.vivExtData && tab.vivExtData.isFolder
+    const folderClass = isFolder ? ' is-folder' : ''
     const tabClass = compact
-      ? `svb-tab svb-pinned-tab is-compact${discardedClass}${tiledClass}`
-      : `svb-tab${discardedClass}${tiledClass}${hasClose ? ' has-close' : ''}${hasAdd ? ' has-add' : ''}${isActuallyMultiSelected ? ' is-selected' : ''}${rowVisualState.isDragging ? ' is-dragging' : ''}${rowVisualState.isDropTarget ? ' is-drop-target' : ''}`
+      ? `svb-tab svb-pinned-tab is-compact${discardedClass}${tiledClass}${folderClass}`
+      : `svb-tab${discardedClass}${tiledClass}${folderClass}${hasClose ? ' has-close' : ''}${hasAdd ? ' has-add' : ''}${isActuallyMultiSelected ? ' is-selected' : ''}${rowVisualState.isDragging ? ' is-dragging' : ''}${rowVisualState.isDropTarget ? ' is-drop-target' : ''}`
     const depth = item && !compact ? item.depth : 0
     const visibleIndex = item && !compact ? item.visibleIndex : -1
     const subtreeSize = item && !compact ? item.subtreeSize : 1
@@ -8321,9 +10293,8 @@ function createSidebarRenderer(options) {
     const hasChildren = !!(item && item.hasChildren)
     const isCollapsed = !!(item && item.collapsed)
     const visibleBranchSize = item && !compact ? item.visibleBranchSize || 1 : 1
-    const coloredClass = tab.vivExtData && tab.vivExtData.tabColor && TAB_COLOR_SWATCHES[tab.vivExtData.tabColor]
-      ? ' is-colored'
-      : ''
+    const colorKey = tab.vivExtData && (tab.vivExtData.tabColor || tab.vivExtData.folderColor)
+    const coloredClass = colorKey && TAB_COLOR_SWATCHES[colorKey] ? ' is-colored' : ''
     const visualStyle = (tiledClass || coloredClass) ? getTabVisualStyle(tab) : ''
 
     node.className = `${tabClass}${coloredClass}${rowVisualState.isActive ? ' is-active' : ''}`
@@ -8337,7 +10308,14 @@ function createSidebarRenderer(options) {
     node.setAttribute('data-drop-position', dropPosition)
     node.setAttribute('data-parent', hasChildren ? 'true' : 'false')
     node.setAttribute('data-folded', isCollapsed ? 'true' : 'false')
-    node.setAttribute('title', tab.title)
+    node.setAttribute('title', getTabHoverTitle(tab, rowVisualState.isActive))
+    node.setAttribute('data-base-title', tab.title || '')
+    const record = tab.vivExtData && typeof tab.vivExtData === 'object' && tab.vivExtData['svbTree']
+    if (record && record.createdAt) {
+      node.setAttribute('data-created-at', record.createdAt)
+    } else {
+      node.removeAttribute('data-created-at')
+    }
     if (visualStyle) node.setAttribute('style', visualStyle)
     else node.removeAttribute('style')
 
@@ -8369,7 +10347,7 @@ function createSidebarRenderer(options) {
         contentNode = createNodeFromHtml('<span class="svb-tab__content"></span>')
         body.insertBefore(contentNode, addNode || closeNode || null)
       }
-      syncTabContent(contentNode, tab, editing)
+      syncTabContent(contentNode, tab, editing, item)
     }
 
     syncOptionalDirectChild(body, '.svb-tab__add', hasAdd ? renderAddButton(tab.id) : '', null)
@@ -8886,6 +10864,13 @@ function createSidebarRenderer(options) {
         : null
       onCreateTab()
     }
+    if (role === 'create-folder') {
+      pendingScrollToActive = true
+      pendingScrollSourceTabId = latestState && Number.isFinite(latestState.activeTabId)
+        ? latestState.activeTabId
+        : null
+      onCreateFolderTab()
+    }
     if (role === 'create-child-tab' && Number.isFinite(tabId)) {
       pendingScrollToActive = true
       pendingScrollSourceTabId = latestState && Number.isFinite(latestState.activeTabId)
@@ -8909,7 +10894,8 @@ function createSidebarRenderer(options) {
     const input = event.target.closest('.svb-settings-view input')
     if (!input || !input.name) return
 
-    const value = input.type === 'checkbox' ? input.checked : input.value
+    const rawValue = input.type === 'checkbox' ? input.checked : input.value
+    const value = input.name === 'autoCloseTabsDays' ? Number(rawValue) : rawValue
     settingsStore.set(input.name, value)
     renderCurrent()
   }, eventOptions)
@@ -9062,19 +11048,64 @@ function createSidebarRenderer(options) {
 
     event.preventDefault()
     event.stopPropagation()
-    if (onOpenContextMenu) onOpenContextMenu(tabId)
 
-    const rootRect = root.getBoundingClientRect()
-    contextMenu = {
-      tabId,
-      x: event.clientX - rootRect.left,
-      y: event.clientY - rootRect.top,
-      viewportY: event.clientY,
+    root.classList.add('is-menu-open')
+    
+    const showMenu = () => {
+      const rootRect = root.getBoundingClientRect()
+      contextMenu = {
+        tabId,
+        x: event.clientX - rootRect.left,
+        y: event.clientY - rootRect.top,
+        viewportY: event.clientY,
+        viewportX: event.clientX,
+      }
+      renderCurrent()
     }
-    renderCurrent()
+
+    if (onOpenContextMenu) {
+      const result = onOpenContextMenu(tabId)
+      if (result && typeof result.then === 'function') {
+        result.then(showMenu).catch(err => {
+          console.error(err)
+          root.classList.remove('is-menu-open')
+        })
+      } else {
+        showMenu()
+      }
+    } else {
+      showMenu()
+    }
   }, eventOptions)
 
   root.addEventListener('pointerover', event => {
+    const tabNode = event.target.closest('[data-role="activate-tab"][data-created-at]')
+    if (tabNode) {
+      const createdAt = Number(tabNode.getAttribute('data-created-at'))
+      if (createdAt) {
+        const baseTitle = tabNode.getAttribute('data-base-title') || ''
+        let title = baseTitle
+        
+        if (tabNode.classList.contains('is-active')) {
+          title += '\n\nOpened: Just now (Active)'
+        } else {
+          const now = Date.now()
+          const ageMs = now - createdAt
+          const ageDays = Math.floor(ageMs / (1000 * 60 * 60 * 24))
+          const ageHours = Math.floor((ageMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+          const ageMinutes = Math.floor((ageMs % (1000 * 60 * 60)) / (1000 * 60))
+          
+          title += '\n\nOpened: '
+          if (ageDays > 0) title += `${ageDays}d `
+          if (ageHours > 0) title += `${ageHours}h `
+          if (ageDays === 0 && ageHours === 0) title += `${ageMinutes}m `
+          title += 'ago'
+        }
+        
+        tabNode.setAttribute('title', title)
+      }
+    }
+
     const menuItem = event.target.closest('.svb-menu__item.has-submenu')
     if (menuItem) positionSubmenu(menuItem)
     syncWorkspaceTitle(event.target.closest('.svb-workspace[data-workspace-name]'))
@@ -9085,6 +11116,26 @@ function createSidebarRenderer(options) {
     const next = event.relatedTarget instanceof Element ? event.relatedTarget.closest('.svb-workspace[data-workspace-name]') : null
     syncWorkspaceTitle(next)
   }, eventOptions)
+
+  // Keep the active workspace icon inside the visible part of the scroller.
+  function revealActiveWorkspace(scroller) {
+    const active = scroller.querySelector('.svb-workspace.is-active')
+    if (!active) return
+    const start = active.offsetLeft
+    const end = start + active.offsetWidth
+    if (start < scroller.scrollLeft) {
+      scroller.scrollLeft = start
+    } else if (end > scroller.scrollLeft + scroller.clientWidth) {
+      scroller.scrollLeft = end - scroller.clientWidth
+    }
+  }
+
+  // Fade whichever edge has more icons hidden behind it.
+  function syncWorkspaceScrollEdges(scroller) {
+    const maxScroll = scroller.scrollWidth - scroller.clientWidth
+    scroller.classList.toggle('has-overflow-start', scroller.scrollLeft > 1)
+    scroller.classList.toggle('has-overflow-end', maxScroll - scroller.scrollLeft > 1)
+  }
 
   // The title line under the workspace icons previews the hovered workspace
   // and falls back to the active one. Text-only update; no re-render.
@@ -9183,11 +11234,30 @@ function createSidebarRenderer(options) {
 
     const activeTab = list.querySelector(`.svb-tab[data-tab-id="${state.activeTabId}"]`)
     if (activeTab) {
+      if (activeTab.closest('.svb-pinned-folder-group')) {
+        pendingScrollToActive = false
+        pendingScrollSourceTabId = null
+        return
+      }
+
       const listRect = list.getBoundingClientRect()
       const activeRect = activeTab.getBoundingClientRect()
       const epsilon = 1
-      const visibleTop = listRect.top
-      const visibleBottom = listRect.bottom
+
+      let stickyTopLimit = listRect.top
+      const topButtons = list.querySelector('.svb-new-item-buttons.is-inline.is-top')
+      if (topButtons) {
+        const btnRect = topButtons.getBoundingClientRect()
+        stickyTopLimit = Math.max(stickyTopLimit, btnRect.bottom)
+      }
+      const pinnedGroups = list.querySelectorAll('.svb-pinned-folder-group')
+      for (const group of pinnedGroups) {
+        const groupRect = group.getBoundingClientRect()
+        stickyTopLimit = Math.max(stickyTopLimit, groupRect.bottom)
+      }
+
+      const visibleTop = stickyTopLimit + 2
+      const visibleBottom = listRect.bottom - 2
 
       if (activeRect.top < visibleTop - epsilon) {
         list.scrollTop += activeRect.top - visibleTop
@@ -9261,7 +11331,22 @@ function createSidebarRenderer(options) {
       const visualState = buildVisualState(state)
       const treeTabs = Array.isArray(state.treeTabs) ? state.treeTabs : []
       const isDragging = visualState.draggedIdSet.size > 0
-      const structureChanged = !areTabOrdersEqual(previousPinnedTabsSnapshot, state.pinnedTabs)
+      const currentPinnedFolderIds = new Set()
+      for (const item of treeTabs) {
+        const tab = findTab(item.id)
+        if (tab && tab.vivExtData && tab.vivExtData.pinnedFolder) {
+          currentPinnedFolderIds.add(item.id)
+        }
+      }
+      const currentNewTabPlacement = settingsStore.get('newTabPlacement') || 'bottom'
+      const newTabPlacementChanged = currentNewTabPlacement !== previousNewTabPlacement
+      const isSettingsOpenChanged = isSettingsOpen !== previousIsSettingsOpen
+      const pinnedFolderChanged = currentPinnedFolderIds.size !== previousPinnedFolderIds.size
+        || [...currentPinnedFolderIds].some(id => !previousPinnedFolderIds.has(id))
+      const structureChanged = pinnedFolderChanged
+        || newTabPlacementChanged
+        || isSettingsOpenChanged
+        || !areTabOrdersEqual(previousPinnedTabsSnapshot, state.pinnedTabs)
         || !isSameTreeShape(previousTreeTabsSnapshot, treeTabs)
       const contentChangedIds = structureChanged
         ? new Set()
@@ -9278,6 +11363,7 @@ function createSidebarRenderer(options) {
       }
       if (!structureChanged) {
         updateVisualOnlyNodes(state, treeTabs, visualState, currentShell, contentChangedIds)
+        syncPinnedGrid(currentShell.pinnedGrid)
         syncScroll(currentShell.tabList, state)
       } else {
         const previousScrollTop = currentShell.tabList ? currentShell.tabList.scrollTop : 0
@@ -9296,20 +11382,117 @@ function createSidebarRenderer(options) {
           activeKeys.add(getTabKey(tab, true))
           return getOrUpdateTabNode(tab, true, state.canCloseVisibleTabs, null, visualState)
         })
-        const regularNodes = treeTabs.map(item => {
-          activeKeys.add(getTabKey(item.tab, false))
-          return getOrUpdateTabNode(item.tab, false, state.canCloseVisibleTabs, item, visualState)
-        })
+
+        const pinnedFolderIds = new Set()
+        for (const item of treeTabs) {
+          const tab = findTab(item.id)
+          if (tab && tab.vivExtData && tab.vivExtData.pinnedFolder) {
+            pinnedFolderIds.add(item.id)
+          }
+        }
+
+        const regularNodes = []
+        let currentPinnedFolderId = null
+        let currentGroupNodes = []
+
+        const flushCurrentStickyGroup = () => {
+          if (currentPinnedFolderId != null && currentGroupNodes.length > 0) {
+            let group = pinnedFolderGroupsById.get(currentPinnedFolderId)
+            if (!group) {
+              group = document.createElement('div')
+              group.className = 'svb-pinned-folder-group'
+              group.setAttribute('data-pinned-folder-id', String(currentPinnedFolderId))
+              pinnedFolderGroupsById.set(currentPinnedFolderId, group)
+            }
+            syncChildren(group, currentGroupNodes)
+            regularNodes.push(group)
+            currentPinnedFolderId = null
+            currentGroupNodes = []
+          }
+        }
+
+        for (const item of treeTabs) {
+          const tab = findTab(item.id)
+          if (!tab) continue
+          activeKeys.add(getTabKey(tab, false))
+          const node = getOrUpdateTabNode(tab, false, state.canCloseVisibleTabs, item, visualState)
+
+          let parentPinnedFolderId = null
+          if (pinnedFolderIds.has(item.id)) {
+            parentPinnedFolderId = item.id
+          } else if (item.ancestorIds && item.ancestorIds.length > 0) {
+            parentPinnedFolderId = item.ancestorIds.find(id => pinnedFolderIds.has(id)) || null
+          }
+
+          if (parentPinnedFolderId != null) {
+            if (currentPinnedFolderId != null && currentPinnedFolderId !== parentPinnedFolderId) {
+              flushCurrentStickyGroup()
+            }
+            currentPinnedFolderId = parentPinnedFolderId
+            currentGroupNodes.push(node)
+          } else {
+            flushCurrentStickyGroup()
+            regularNodes.push(node)
+          }
+        }
+        flushCurrentStickyGroup()
+
+        for (const [folderId, group] of pinnedFolderGroupsById.entries()) {
+          if (!pinnedFolderIds.has(folderId)) {
+            group.remove()
+            pinnedFolderGroupsById.delete(folderId)
+          }
+        }
+
+        pruneTabNodes(activeKeys)
 
         syncChildren(currentShell.pinnedGrid, pinnedNodes)
-        const listNodes = empty
-          ? [currentShell.emptyMessage, currentShell.inlineNewTabButton]
-          : regularNodes.concat(currentShell.inlineNewTabButton)
+        currentShell.pinnedSection.style.display = state.pinnedTabs.length ? '' : 'none'
+
+        const isTopMode = currentNewTabPlacement === 'top'
+        currentShell.inlineNewTabButton.classList.toggle('is-top', isTopMode)
+
+        let listNodes
         if (empty) {
+          listNodes = isTopMode
+            ? [currentShell.inlineNewTabButton, currentShell.emptyMessage]
+            : [currentShell.emptyMessage, currentShell.inlineNewTabButton]
           currentShell.emptyMessage.textContent = emptyMessage
+        } else if (isTopMode) {
+          let insertIndex = 0
+          for (let i = 0; i < regularNodes.length; i++) {
+            if (regularNodes[i].classList && regularNodes[i].classList.contains('svb-pinned-folder-group')) {
+              insertIndex = i + 1
+            } else {
+              break
+            }
+          }
+          listNodes = [
+            ...regularNodes.slice(0, insertIndex),
+            currentShell.inlineNewTabButton,
+            ...regularNodes.slice(insertIndex),
+          ]
+        } else {
+          listNodes = regularNodes.concat(currentShell.inlineNewTabButton)
         }
+
         syncChildren(currentShell.tabList, listNodes)
-        pruneTabNodes(activeKeys)
+
+        if (isTopMode) {
+          let topOffset = 0
+          for (let i = 0; i < regularNodes.length; i++) {
+            if (regularNodes[i].classList && regularNodes[i].classList.contains('svb-pinned-folder-group')) {
+              topOffset += (regularNodes[i].offsetHeight || 0)
+            } else {
+              break
+            }
+          }
+          currentShell.inlineNewTabButton.style.top = `${topOffset}px`
+        } else {
+          currentShell.inlineNewTabButton.style.top = ''
+        }
+
+        syncPinnedGrid(currentShell.pinnedGrid)
         updateContextMenu(currentShell, state)
 
         syncOverflowState()
@@ -9323,11 +11506,13 @@ function createSidebarRenderer(options) {
 
       previousPinnedTabsSnapshot = state.pinnedTabs
       previousTreeTabsSnapshot = treeTabs
+      previousPinnedFolderIds = currentPinnedFolderIds
       previousActiveTabId = state.activeTabId
       previousCanCloseVisibleTabs = state.canCloseVisibleTabs
       previousPanelPinned = state.panelPinned
       previousIsSettingsOpen = isSettingsOpen
       previousCreatingWorkspace = creatingWorkspace
+      previousNewTabPlacement = currentNewTabPlacement
       previousSelectedIds = visualState.selectedIds.slice()
       previousDraggedIds = visualState.draggedIds.slice()
       previousDropTargetId = visualState.dropTargetId
@@ -9342,6 +11527,8 @@ function createSidebarRenderer(options) {
     },
 
     dispose() {
+      if (pinnedGridObserver) pinnedGridObserver.disconnect()
+      if (workspaceBarObserver) workspaceBarObserver.disconnect()
       eventController.abort()
       stopDragAutoScroll()
       pointerDrag = null
@@ -9349,6 +11536,7 @@ function createSidebarRenderer(options) {
       contextMenu = null
       pendingEnterNodes.clear()
       tabNodesByKey.clear()
+      pinnedFolderGroupsById.clear()
       renderCurrent = () => {}
       latestState = null
     },
@@ -9356,6 +11544,125 @@ function createSidebarRenderer(options) {
 }
 
 module.exports = { createSidebarRenderer }
+
+    },
+    "diagnostics/activation-trace.js": function(require, module, exports) {
+// Temporary, bounded diagnostics. Never retain titles, URLs or error messages.
+function createActivationTrace(raw, capacity = 2000) {
+  const records = []
+  let sequence = 0
+  let operation = 0
+  const started = Date.now()
+  const removers = []
+  function record(event, data = {}) {
+    records.push({ sequence: ++sequence, ms: Date.now() - started, event, data })
+    if (records.length > capacity) records.shift()
+  }
+  const summarizeTabs = tabs => Array.isArray(tabs) ? tabs.map(tab => ({
+    id: tab.id, index: tab.index, active: tab.active, pinned: tab.pinned,
+    openerTabId: tab.openerTabId, windowId: tab.windowId,
+  })) : undefined
+  const api = { ...raw }
+  for (const name of ['activateTab', 'closeTab', 'closeTabs', 'getTabs', 'moveTab', 'syncNativeSelection']) {
+    if (typeof raw[name] !== 'function') continue
+    api[name] = (...args) => {
+      const id = ++operation
+      record(`api.${name}.start`, { id, args: args.map(arg => Array.isArray(arg) ? arg.slice() : arg) })
+      try {
+        const result = raw[name](...args)
+        const done = value => record(`api.${name}.done`, { id, tabs: name === 'getTabs' ? summarizeTabs(value) : undefined })
+        if (result && typeof result.then === 'function') {
+          result.then(done, () => record(`api.${name}.error`, { id }))
+        } else done(result)
+        return result
+      } catch (error) {
+        record(`api.${name}.error`, { id })
+        throw error
+      }
+    }
+  }
+  if (raw.onActivated) removers.push(raw.onActivated(info => record('browser.activated', {
+    tabId: info.tabId, windowId: info.windowId,
+  })))
+  if (raw.onRemoved) removers.push(raw.onRemoved((tabId, info) => record('browser.removed', {
+    tabId, windowId: info && info.windowId, isWindowClosing: info && info.isWindowClosing,
+  })))
+  return {
+    api, record,
+    snapshot: () => JSON.parse(JSON.stringify(records)),
+    dispose: () => removers.forEach(remove => { if (typeof remove === 'function') remove() }),
+  }
+}
+
+function installTraceDownload(trace, root, getContext) {
+  let dialog = null
+  function download() {
+    const payload = { format: 'svb-activation-trace-v1', capturedAt: new Date().toISOString(), context: getContext(), events: trace.snapshot() }
+    if (dialog) dialog.remove()
+    dialog = document.createElement('dialog')
+    dialog.style.cssText = 'width: min(720px, 85vw); padding: 20px; background: #242424; color: white; border: 1px solid #888; border-radius: 8px;'
+    const heading = document.createElement('h2')
+    heading.textContent = 'Журнал активації вкладок'
+    const help = document.createElement('p')
+    help.textContent = 'Скопіюй текст (Ctrl+A, Ctrl+C) і надішли його в чат або збережи у файл .json.'
+    const field = document.createElement('textarea')
+    field.readOnly = true
+    field.setAttribute('aria-label', 'Журнал активації вкладок JSON')
+    field.style.cssText = 'display: block; width: 100%; height: 45vh; margin-bottom: 12px;'
+    field.value = JSON.stringify(payload, null, 2)
+    const save = document.createElement('button')
+    save.textContent = 'Зберегти JSON'
+    save.onclick = () => {
+      const url = URL.createObjectURL(new Blob([field.value], { type: 'application/json' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `svb-activation-${Date.now()}.json`
+      dialog.appendChild(link)
+      link.click()
+      link.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 10000)
+    }
+    const close = document.createElement('button')
+    close.textContent = 'Закрити'
+    close.onclick = () => { dialog.remove(); dialog = null }
+    dialog.append(heading, help, field, save, close)
+    document.body.appendChild(dialog)
+    dialog.showModal()
+    field.focus()
+    field.select()
+  }
+
+  // Capture before rendering can replace the clicked row.
+  function click(event) {
+    const target = event.target.closest('[data-role]')
+    if (target && target.dataset.role === 'activation-trace') {
+      event.preventDefault()
+      event.stopPropagation()
+      download()
+      return
+    }
+    if (target) trace.record('panel.click', { role: target.dataset.role, tabId: Number(target.dataset.tabId) || null })
+  }
+  function key(event) {
+    if (event.ctrlKey && event.altKey && event.shiftKey && event.code === 'KeyD') {
+      event.preventDefault()
+      event.stopPropagation()
+      download()
+    }
+  }
+  root.addEventListener('click', click, true)
+  window.addEventListener('keydown', key, true)
+  window.__svbDownloadActivationTrace = download
+  return () => {
+    root.removeEventListener('click', click, true)
+    window.removeEventListener('keydown', key, true)
+    delete window.__svbDownloadActivationTrace
+    if (dialog) dialog.remove()
+    trace.dispose()
+  }
+}
+
+module.exports = { createActivationTrace, installTraceDownload }
 
     },
     "entry.js": function(require, module, exports) {
@@ -9370,6 +11677,8 @@ const { createThemeAdapter } = require('./adapters/theme.js')
 const { createLayoutAdapter } = require('./adapters/layout.js')
 const { createSidebarRenderer } = require('./ui/render.js')
 const { settingsStore } = require('./store/settings-store.js')
+
+const { createActivationTrace, installTraceDownload } = require('./diagnostics/activation-trace.js')
 
 const APP_ID = 'svb-root'
 
@@ -9439,50 +11748,11 @@ async function main() {
     dragShield: mount.dragShield,
     panelStore,
   })
-  const api = createTabsApi()
+  const activationTrace = createActivationTrace(createTabsApi())
+  const api = activationTrace.api
   const store = createTabStore(api)
   const selectionStore = createSelectionStore()
   const dragStore = createDragStore()
-  function writeClipboard(text) {
-    if (!text) return
-    try {
-      if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-        void navigator.clipboard.writeText(text)
-        return
-      }
-    } catch (error) {}
-    try {
-      const textarea = document.createElement('textarea')
-      textarea.value = text
-      textarea.style.position = 'fixed'
-      textarea.style.opacity = '0'
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-    } catch (error) {}
-  }
-
-  function copyTabsToClipboard(action, tabId, selectedIds) {
-    if (!latestTabState) return
-    const ids = Array.isArray(selectedIds) && selectedIds.includes(tabId) && selectedIds.length > 1
-      ? selectedIds
-      : [tabId]
-    const byId = new Map(latestTabState.pinnedTabs.concat(latestTabState.tabs).map(tab => [tab.id, tab]))
-    const lines = ids
-      .map(id => byId.get(id))
-      .filter(Boolean)
-      .map(tab => {
-        const url = tab.url || ''
-        const title = tab.title || url
-        if (action === 'copy-url') return url
-        if (action === 'copy-title') return title
-        return `[${title}](${url})`
-      })
-      .filter(Boolean)
-    if (lines.length) writeClipboard(lines.join('\n'))
-  }
-
   const renderer = createSidebarRenderer({
     root: mount.root,
     dragShield: mount.dragShield,
@@ -9492,6 +11762,7 @@ async function main() {
     },
     onCloseTab: id => store.closeTab(id),
     onCreateTab: () => store.createTab(),
+    onCreateFolderTab: () => store.createFolderTab(),
     onCreateChildTab: id => store.createChildTab(id),
     onRenameTab: (id, title) => { void store.renameTab(id, title) },
     onTogglePinned: () => panelStore.togglePinned(),
@@ -9508,6 +11779,9 @@ async function main() {
       const selectedIds = latestSelectionState.selectedIds || []
       if (!selectedIds.includes(id)) {
         selectionStore.selectSingle(id)
+      }
+      if (store.refreshWorkspaces) {
+        return store.refreshWorkspaces()
       }
     },
     onContextMenuAction: (action, payload) => {
@@ -9526,6 +11800,16 @@ async function main() {
         store.createChildTab(tabId)
       } else if (action === 'new-sibling') {
         store.createSiblingTab(tabId)
+      } else if (action === 'new-folder-child') {
+        store.createFolderTabAt(tabId, 'inside')
+      } else if (action === 'new-folder-sibling') {
+        store.createFolderTabAt(tabId, 'after')
+      } else if (action === 'new-folder-above') {
+        store.createFolderTabAt(tabId, 'before')
+      } else if (action === 'move-top') {
+        void store.moveSelectionToTop(tabId, selectedIds)
+      } else if (action === 'move-bottom') {
+        void store.moveSelectionToBottom(tabId, selectedIds)
       } else if (action === 'move-window') {
         void store.moveSelectionToNewWindow(tabId, selectedIds)
       } else if (action === 'move-workspace') {
@@ -9536,18 +11820,22 @@ async function main() {
         void store.togglePinnedForSelection(tabId, selectedIds)
       } else if (action === 'toggle-mute') {
         void store.toggleMutedForSelection(tabId, selectedIds)
+      } else if (action === 'hibernate') {
+        void store.hibernateSelection(tabId, selectedIds)
+      } else if (action === 'reload') {
+        void store.reloadSelection(tabId, selectedIds)
+      } else if (action === 'bookmark-tab') {
+        void store.bookmarkSelection(tabId, selectedIds)
+      } else if (action === 'copy-url') {
+        void store.copySelectionUrl(tabId, selectedIds)
+      } else if (action === 'copy-title') {
+        void store.copySelectionTitle(tabId, selectedIds)
+      } else if (action === 'copy-markdown') {
+        void store.copySelectionMarkdown(tabId, selectedIds)
       } else if (action === 'set-color') {
         void store.setColorForSelection(tabId, selectedIds, payload.colorKey)
       } else if (action === 'duplicate') {
         void store.duplicateTab(tabId)
-      } else if (action === 'reload') {
-        store.reloadSelection(tabId, selectedIds)
-      } else if (action === 'hibernate') {
-        void store.hibernateSelection(tabId, selectedIds)
-      } else if (action === 'copy-url' || action === 'copy-title' || action === 'copy-markdown') {
-        copyTabsToClipboard(action, tabId, selectedIds)
-      } else if (action === 'bookmark-tab') {
-        void store.bookmarkTab(tabId)
       } else if (action === 'save-tree-bookmark') {
         void store.saveTreeAsBookmark(tabId)
       } else if (action === 'open-saved-tree') {
@@ -9645,7 +11933,13 @@ async function main() {
   let previousVisibleActiveTabId = null
   const getTabLookup = createTabLookupCache()
   const entryEventController = new AbortController()
-  const unsubscribers = []
+  const traceContext = () => ({
+    activeTabId: latestTabState && latestTabState.activeTabId,
+    direction: settingsStore.get('activateAfterClose'),
+    adaptive: settingsStore.get('adaptiveActivation'),
+    tree: latestTabState ? latestTabState.treeTabs.map(item => ({ id: item.id, parentId: item.parentId })) : [],
+  })
+  const unsubscribers = [installTraceDownload(activationTrace, mount.root, traceContext)]
 
   function syncView() {
     if (!latestTabState) return
@@ -9664,6 +11958,7 @@ async function main() {
 
   unsubscribers.push(store.subscribe(state => {
     latestTabState = state
+    activationTrace.record('store.snapshot', traceContext())
     const { visibleIds, treeItemsById } = getTabLookup(state)
     const activeRegularVisible = Number.isFinite(state.activeTabId) && treeItemsById.has(state.activeTabId)
     const activeTabChanged = state.activeTabId !== previousVisibleActiveTabId
@@ -9674,7 +11969,7 @@ async function main() {
       && latestSelectionState.selectedIds.length <= 1
       && latestSelectionState.selectedIds[0] !== state.activeTabId
     ) {
-      selectionStore.selectSingle(state.activeTabId)
+      selectionStore.selectSingle(state.activeTabId, { source: 'browser' })
     } else {
       selectionStore.retainValid(visibleIds)
     }
@@ -9688,9 +11983,11 @@ async function main() {
     syncView()
   }))
 
-  unsubscribers.push(selectionStore.subscribe(state => {
+  unsubscribers.push(selectionStore.subscribe((state, source) => {
     latestSelectionState = state
-    if (state.selectedIds && state.selectedIds.length > 1) {
+    // Browser events only update our display. Replaying them into Vivaldi's
+    // index-based highlight API can activate a different tab during removal.
+    if (source !== 'browser' && state.selectedIds && state.selectedIds.length > 0) {
       api.syncNativeSelection(state.selectedIds)
     }
     syncView()
@@ -9698,6 +11995,10 @@ async function main() {
 
   unsubscribers.push(dragStore.subscribe(state => {
     latestDragState = state
+    syncView()
+  }))
+
+  unsubscribers.push(settingsStore.subscribe(() => {
     syncView()
   }))
 
@@ -9712,6 +12013,8 @@ async function main() {
       }
     }
     if (typeof renderer.dispose === 'function') renderer.dispose()
+    if (typeof layout.dispose === 'function') layout.dispose()
+    if (typeof theme.dispose === 'function') theme.dispose()
     if (typeof store.dispose === 'function') store.dispose()
   }
   await store.init()
